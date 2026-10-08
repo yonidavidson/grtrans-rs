@@ -1,0 +1,15 @@
+[package]
+name = "grtrans"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Command-line driver for grtrans-rs"
+
+[dependencies]
+grtrans-core.workspace = true
+grtrans-geodesics.workspace = true
+grtrans-physics.workspace = true
+grtrans-transfer.workspace = true
+grtrans-io.workspace = true
+rayon.workspace = true

@@ -1,0 +1,10 @@
+[package]
+name = "grtrans-transfer"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Polarized radiative transfer integration for grtrans-rs"
+
+[dependencies]
+grtrans-core.workspace = true

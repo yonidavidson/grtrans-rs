@@ -1,0 +1,13 @@
+[package]
+name = "grtrans-io"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Input and output formats for grtrans-rs"
+
+[dependencies]
+grtrans-core.workspace = true
+grtrans-geodesics.workspace = true
+grtrans-physics.workspace = true
+grtrans-transfer.workspace = true

@@ -1,0 +1,94 @@
+{
+  "name": "harm",
+  "upstream_commit": "c76cb11fa1396516f38ba6f972c68fbb5b5ae984",
+  "upstream_worktree_dirty": true,
+  "python": "3.14.8",
+  "numpy": "2.3.4",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "omp_num_threads": "8",
+  "wall_seconds": 4.45,
+  "date_utc": "2026-10-08T20:16:10Z",
+  "inputs": {
+    "fname": "HARM",
+    "nfreq": 1,
+    "nmu": 1,
+    "fmin": 230000000000.0,
+    "fmax": 230000000000.0,
+    "ename": "POLSYNCHTH",
+    "nvals": 1,
+    "spin": 0.9375,
+    "standard": 1,
+    "nn": [
+      150,
+      150,
+      400
+    ],
+    "uout": 0.04,
+    "mbh": 4000000.0,
+    "mdotmin": 1570000000000000.0,
+    "mdotmax": 1570000000000000.0,
+    "nmdot": 1,
+    "mumin": 0.6428,
+    "mumax": 0.6428,
+    "gridvals": [
+      -13,
+      13,
+      -13,
+      13
+    ],
+    "hhfile": "dump040",
+    "hdfile": "dump",
+    "hindf": 40,
+    "hnt": 1,
+    "muval": 0.25,
+    "gmin": 1.0
+  },
+  "files": {
+    "ivals.npy": {
+      "sha256": "3b4a9f0e330c99ef50de0f008cc806355a2c3972a183cb37971af30e68c15d7d",
+      "raw": "ivals.f64.bin",
+      "raw_sha256": "a751b27750259d66556346953b43d154336c2178298df96b3b592478ff7b6e74",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        22500,
+        1,
+        1
+      ],
+      "dtype": "float64"
+    },
+    "ab.npy": {
+      "sha256": "383d10a3b41be2496e2fe124183ce0f94a03e8bd5b0fef16d0449b97a0c3fa04",
+      "raw": "ab.f64.bin",
+      "raw_sha256": "e0b66f4339646fd4e332a8c8fa76f61ac6af75c456240b8765d2d2d6118b4a86",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        22500,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "nu.npy": {
+      "sha256": "6314041932c52d1254cbacd9096a7c8755dd62e5b3518d7ef0d59cc25fb61018",
+      "raw": "nu.f64.bin",
+      "raw_sha256": "9d06606de3b764e46ae0be15b5e3b7cd5309b9198a59c722914484d29dadc47b",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        1
+      ],
+      "dtype": "float64"
+    },
+    "spec.npy": {
+      "sha256": "172627a93e14a821b86c2923f5a263c82e3eac5f27be7b7573a1b0c25540a521",
+      "raw": "spec.f64.bin",
+      "raw_sha256": "352af2bd814abe659daee29a41b1bf0300a23f4be1a698c946938d85d6760f12",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        1,
+        1
+      ],
+      "dtype": "float64"
+    }
+  },
+  "upstream_pickle": "test_grtrans_harm.p",
+  "rel_err_vs_upstream_pickle": 0.0037657795410531297
+}

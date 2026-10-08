@@ -1,0 +1,40 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the GRTRANS papers and this repository."
+title: grtrans-rs
+abstract: >-
+  Rust port of GRTRANS, a general relativistic, polarized radiative transfer
+  code for ray tracing emission from accretion flows and jets around spinning
+  black holes.
+authors:
+  - family-names: Davidson
+    given-names: Yoni
+  - family-names: Dexter
+    given-names: Jason
+    note: "author of the original GRTRANS Fortran code"
+version: 0.1.0
+date-released: 2026-10-08
+license: MIT
+repository-code: "https://github.com/yonidavidson/grtrans-rs"
+references:
+  - type: article
+    title: "A public code for general relativistic, polarised radiative transfer around spinning black holes"
+    authors:
+      - family-names: Dexter
+        given-names: Jason
+    journal: Monthly Notices of the Royal Astronomical Society
+    volume: 462
+    start: 115
+    year: 2016
+    doi: 10.1093/mnras/stw1526
+  - type: article
+    title: "A Fast New Public Code for Computing Photon Orbits in a Kerr Spacetime"
+    authors:
+      - family-names: Dexter
+        given-names: Jason
+      - family-names: Agol
+        given-names: Eric
+    journal: The Astrophysical Journal
+    volume: 696
+    start: 1616
+    year: 2009
+    doi: 10.1088/0004-637X/696/2/1616

@@ -1,0 +1,9 @@
+/target
+**/*.rs.bk
+*.pyc
+__pycache__/
+.venv/
+*.so
+*.dylib
+.DS_Store
+.cargo/

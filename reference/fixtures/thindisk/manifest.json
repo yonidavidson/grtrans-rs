@@ -1,0 +1,105 @@
+{
+  "name": "thindisk",
+  "upstream_commit": "c76cb11fa1396516f38ba6f972c68fbb5b5ae984",
+  "upstream_worktree_dirty": true,
+  "python": "3.14.8",
+  "numpy": "2.3.4",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "omp_num_threads": "8",
+  "wall_seconds": 0.11,
+  "date_utc": "2026-10-08T20:16:06Z",
+  "inputs": {
+    "fname": "THINDISK",
+    "nfreq": 25,
+    "nmu": 1,
+    "fmin": 2.41e+16,
+    "fmax": 6.31e+18,
+    "ename": "BBPOL",
+    "nvals": 4,
+    "spin": 0.9,
+    "standard": 2,
+    "nn": [
+      100,
+      100,
+      1
+    ],
+    "uout": 0.01,
+    "mbh": 10,
+    "mumin": 0.26,
+    "mumax": 0.26,
+    "gridvals": [
+      -21,
+      21,
+      -21,
+      21
+    ]
+  },
+  "files": {
+    "ivals.npy": {
+      "sha256": "79f7236f97c9947c4617c0cb02e9089effd833089450f4625bdf5ac5d29501bf",
+      "raw": "ivals.f64.bin",
+      "raw_sha256": "a37137dd688713e91fc7a1c23e2b9938cbea451f11fad2ab462dd44bb4979f5d",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        10000,
+        4,
+        25
+      ],
+      "dtype": "float64"
+    },
+    "ab.npy": {
+      "sha256": "8f006f78d1b8246b1f11f70bf2bf56f6c87f5030154789f888a7d019fbce2c80",
+      "raw": "ab.f64.bin",
+      "raw_sha256": "838d7dc74e851c6d90cf3dc195dac17e1bf55cf394aa280bf46aab345dccafc7",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        10000,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "nu.npy": {
+      "sha256": "c0dba7d36b836d5e62953b914ca5a41b4dab0c18c66e1f9878c93335accfcbb7",
+      "raw": "nu.f64.bin",
+      "raw_sha256": "ccb7725ac6d0e8371ef63cc1d08ac67d73208d156bb358cae6c5ce051e1bcf2a",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        25
+      ],
+      "dtype": "float64"
+    },
+    "spec.npy": {
+      "sha256": "ff5ad1156db8791d90fe18f0c8729973941019a35ce695fcf1d826ffdf05e0ac",
+      "raw": "spec.f64.bin",
+      "raw_sha256": "01590a0c2eaacb4d5b5e6b0e184283309ed14a87ebfcface977e6e73c9e62200",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        4,
+        25
+      ],
+      "dtype": "float64"
+    },
+    "lp.npy": {
+      "sha256": "6ba18d9d568254805668b3166d3536cce7685f363314d4fb8bef658ce6129437",
+      "raw": "lp.f64.bin",
+      "raw_sha256": "e0e52d37dd5e3525f94d2a8c23d3a22e4e199396513deba8e2f1caa7c6b97375",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        25
+      ],
+      "dtype": "float64"
+    },
+    "cp.npy": {
+      "sha256": "c8a58ae0ae2a0913365d1eade198928a7a4adbaf6d133158f7c77ce2935590bf",
+      "raw": "cp.f64.bin",
+      "raw_sha256": "6d9c54dee5660c46886f32d80e57e9dd0ffa57ee0cd2a762b036d9c8e0c3a33a",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        25
+      ],
+      "dtype": "float64"
+    }
+  },
+  "upstream_pickle": "test_grtrans_thindisk.p",
+  "rel_err_vs_upstream_pickle": 0.0006637817503879188
+}

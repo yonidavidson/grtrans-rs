@@ -1,0 +1,36 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/grtrans-core",
+    "crates/grtrans-geodesics",
+    "crates/grtrans-physics",
+    "crates/grtrans-transfer",
+    "crates/grtrans-io",
+    "crates/grtrans",
+    "crates/grtrans-python",
+]
+default-members = [
+    "crates/grtrans-core",
+    "crates/grtrans-geodesics",
+    "crates/grtrans-physics",
+    "crates/grtrans-transfer",
+    "crates/grtrans-io",
+    "crates/grtrans",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/yonidavidson/grtrans-rs"
+authors = ["Yoni Davidson", "Jason Dexter (original GRTRANS)"]
+
+[workspace.dependencies]
+grtrans-core = { path = "crates/grtrans-core" }
+grtrans-geodesics = { path = "crates/grtrans-geodesics" }
+grtrans-physics = { path = "crates/grtrans-physics" }
+grtrans-transfer = { path = "crates/grtrans-transfer" }
+grtrans-io = { path = "crates/grtrans-io" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rayon = "1.10"

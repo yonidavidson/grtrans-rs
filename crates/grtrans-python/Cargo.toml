@@ -1,0 +1,19 @@
+[package]
+name = "grtrans-python"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Python bindings for grtrans-rs (PyO3)"
+
+[lib]
+name = "grtrans_python"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+grtrans-core.workspace = true
+grtrans-geodesics.workspace = true
+grtrans-physics.workspace = true
+grtrans-transfer.workspace = true
+grtrans-io.workspace = true
+pyo3 = { version = "0.23", features = ["extension-module"] }

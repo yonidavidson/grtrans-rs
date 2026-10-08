@@ -1,0 +1,119 @@
+{
+  "powerlaw": {
+    "name": "powerlaw",
+    "upstream_commit": "c76cb11fa1396516f38ba6f972c68fbb5b5ae984",
+    "upstream_worktree_dirty": true,
+    "python": "3.14.8",
+    "numpy": "2.3.4",
+    "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+    "omp_num_threads": "8",
+    "wall_seconds": 11.78,
+    "date_utc": "2026-10-08T20:16:22Z",
+    "inputs": {
+      "fname": "POWERLAW",
+      "nfreq": 1,
+      "nmu": 1,
+      "fmin": 345000000000.0,
+      "fmax": 345000000000.0,
+      "ename": "POLSYNCHTH",
+      "nvals": 4,
+      "spin": 0.0,
+      "standard": 1,
+      "nn": [
+        200,
+        200,
+        1600
+      ],
+      "uout": 5e-05,
+      "mbh": 4000000.0,
+      "mumin": 0.5,
+      "mumax": 0.5,
+      "nrotype": 1,
+      "gridvals": [
+        1200.0,
+        4000.0,
+        0.0,
+        6.283185307179586
+      ],
+      "iname": "lsoda",
+      "srin": 3200.0,
+      "srout": 3300.0,
+      "ntscl": 500000000000.0,
+      "sthin": -0.02,
+      "sthout": 0.02,
+      "rcut": 4000.0,
+      "snscl": 100000.0,
+      "phi0": -0.5,
+      "sphiin": 0.0,
+      "gmin": 1.0
+    },
+    "files": {
+      "ivals.npy": {
+        "sha256": "9f67c09459982fb1cb1e03e2f2e53843fb8a915a6e18b5e947dbbbdf8dec03ac",
+        "raw": "ivals.f64.bin",
+        "raw_sha256": "034cefba0252acc24ed7273ea3762ae449cafb6e103232854c9ab42ffbd89347",
+        "raw_dtype": "little-endian float64",
+        "shape": [
+          40000,
+          4,
+          1
+        ],
+        "dtype": "float64"
+      },
+      "ab.npy": {
+        "sha256": "768e0f5d7a28ace5bc391ed0e8ef171043f20c0dbac3de0ae2a087643fff8546",
+        "raw": "ab.f64.bin",
+        "raw_sha256": "280bc79699089b576111f1b37d25cbbff5d6064f9842e0064a0e8dd3b196caa9",
+        "raw_dtype": "little-endian float64",
+        "shape": [
+          40000,
+          2
+        ],
+        "dtype": "float64"
+      },
+      "nu.npy": {
+        "sha256": "1b517c3a2154bd913d23c8577430f369aa9868df13c6ebb82c12f8a2a0405297",
+        "raw": "nu.f64.bin",
+        "raw_sha256": "f653bd26ae4c9146db09660aef106d44a56fa7e08ea9a17dc60137023530e500",
+        "raw_dtype": "little-endian float64",
+        "shape": [
+          1
+        ],
+        "dtype": "float64"
+      },
+      "spec.npy": {
+        "sha256": "0cb5eb4d53872269adadca06af2c0c52989617593059b351ff6e3616525d626f",
+        "raw": "spec.f64.bin",
+        "raw_sha256": "77a22c3e219d2f8c892a35fd2ce430494f08c8c9ffab87ccb610b4501781b220",
+        "raw_dtype": "little-endian float64",
+        "shape": [
+          4,
+          1
+        ],
+        "dtype": "float64"
+      },
+      "lp.npy": {
+        "sha256": "4f2409824123df300d318cebe8c1ea4612a355ce192655007c61041425c185f0",
+        "raw": "lp.f64.bin",
+        "raw_sha256": "19062b85326e0920de9c7ca4c5a3573e19b010227621c8b72d3b1222e1a5767b",
+        "raw_dtype": "little-endian float64",
+        "shape": [
+          1
+        ],
+        "dtype": "float64"
+      },
+      "cp.npy": {
+        "sha256": "025de8d0d3ceb43fa50e0e5b9e3104283c259ff9bcb445e5b560e3a8a8e7ee01",
+        "raw": "cp.f64.bin",
+        "raw_sha256": "3e08dfe1fb77b778a296f521787b4b3fca8489b4fe071ba85715b84addd40d13",
+        "raw_dtype": "little-endian float64",
+        "shape": [
+          1
+        ],
+        "dtype": "float64"
+      }
+    },
+    "upstream_pickle": "test_toroidalfield.p",
+    "rel_err_vs_upstream_pickle": 0.014526837855813041
+  }
+}

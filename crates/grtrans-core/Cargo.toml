@@ -1,0 +1,9 @@
+[package]
+name = "grtrans-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core geometry, Kerr metric and mathematical kernels for grtrans-rs (translated from GRTRANS)"
+
+[dependencies]

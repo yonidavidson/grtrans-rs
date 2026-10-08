@@ -1,0 +1,86 @@
+{
+  "name": "ffjet_unpol",
+  "upstream_commit": "c76cb11fa1396516f38ba6f972c68fbb5b5ae984",
+  "upstream_worktree_dirty": true,
+  "python": "3.14.8",
+  "numpy": "2.3.4",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "omp_num_threads": "8",
+  "wall_seconds": 1.59,
+  "date_utc": "2026-10-08T20:16:06Z",
+  "inputs": {
+    "fname": "FFJET",
+    "jdfile": "m87bl09rfp10xi5a998fluidvars.bin",
+    "nfreq": 1,
+    "nmu": 1,
+    "fmin": 345000000000.0,
+    "fmax": 345000000000.0,
+    "ename": "SYNCHPL",
+    "nvals": 1,
+    "spin": 0.998,
+    "standard": 1,
+    "nn": [
+      100,
+      100,
+      400
+    ],
+    "uout": 0.01,
+    "mbh": 3400000000.0,
+    "mumin": 0.906,
+    "mumax": 0.906,
+    "gridvals": [
+      -40,
+      20,
+      -20,
+      40
+    ],
+    "ntscl": 2.0,
+    "nrscl": 70.0
+  },
+  "files": {
+    "ivals.npy": {
+      "sha256": "5d0379cde81a5a90f4382fd79db3eacdd2b045c95e517594482206bde987e7fe",
+      "raw": "ivals.f64.bin",
+      "raw_sha256": "83f477bffc4173112166885854778f97796286c17854d69276015d52200c78a2",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        10000,
+        1,
+        1
+      ],
+      "dtype": "float64"
+    },
+    "ab.npy": {
+      "sha256": "c4eef6e6a4e2664a4b25a6e6d2c3d881df954608288b0f37f2ea0fafc5284ad7",
+      "raw": "ab.f64.bin",
+      "raw_sha256": "93cb353d41e186263bb14d8cead236027d388916a8719f88b2e207b7e49d5a1b",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        10000,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "nu.npy": {
+      "sha256": "1b517c3a2154bd913d23c8577430f369aa9868df13c6ebb82c12f8a2a0405297",
+      "raw": "nu.f64.bin",
+      "raw_sha256": "f653bd26ae4c9146db09660aef106d44a56fa7e08ea9a17dc60137023530e500",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        1
+      ],
+      "dtype": "float64"
+    },
+    "spec.npy": {
+      "sha256": "405c42b3982c5fc0f1f0999c492f75f4ecbdd5e193e3abdfaaf31e00d0242b98",
+      "raw": "spec.f64.bin",
+      "raw_sha256": "8b1b0bf8cced8451077b3ebeba0437784482f6dccd60baa9a5c30958f42f9a13",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        1,
+        1
+      ],
+      "dtype": "float64"
+    }
+  }
+}

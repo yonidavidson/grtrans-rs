@@ -1,0 +1,10 @@
+[package]
+name = "grtrans-geodesics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "geokerr Kerr geodesics and camera geometry for grtrans-rs"
+
+[dependencies]
+grtrans-core.workspace = true

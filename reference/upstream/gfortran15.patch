@@ -1,0 +1,399 @@
+diff --git a/fluid_model_ffjet.f90 b/fluid_model_ffjet.f90
+index 61cc940..89adb91 100755
+--- a/fluid_model_ffjet.f90
++++ b/fluid_model_ffjet.f90
+@@ -5,7 +5,6 @@
+       use kerr, only: kerr_metric, lnrf_frame
+       implicit none
+ 
+-      namelist /ffjet/  dfile
+ 
+       character(len=40) :: dfile
+       real, dimension(:), allocatable :: rc_arr, thc_arr, phc_arr
+@@ -37,6 +36,7 @@
+         module procedure ffjet_vals
+       end interface
+ 
++      namelist /ffjet/  dfile
+       contains
+ 
+         subroutine ffjet_vals(x0,a,rho,p,b,u,bmag)
+diff --git a/fluid_model_harm.f90 b/fluid_model_harm.f90
+index d91c8fc..411c50e 100755
+--- a/fluid_model_harm.f90
++++ b/fluid_model_harm.f90
+@@ -7,7 +7,6 @@
+       use math, only: zbrent
+       implicit none
+ 
+-      namelist /harm/  dfile, hfile, nt, indf
+ 
+       character(len=40) :: dfile, hfile
+       integer :: nx1, nx2, n, ndumps, nt, indf, dlen, nhead
+@@ -44,6 +43,7 @@
+         module procedure harm_vals
+       end interface
+ 
++      namelist /harm/  dfile, hfile, nt, indf
+       contains
+ 
+         function findx2harm(x2,args) result(diff)
+diff --git a/fluid_model_harm3d.f90 b/fluid_model_harm3d.f90
+index a978833..75ec87a 100755
+--- a/fluid_model_harm3d.f90
++++ b/fluid_model_harm3d.f90
+@@ -7,7 +7,6 @@
+       use math, only: zbrent
+       implicit none
+ 
+-      namelist /harm/  dfile, hfile, nt, indf, gfile
+ 
+       character(len=100) :: dfile, hfile, gfile
+       integer :: nx1, nx2, nx3, n, ndumps, nt, indf, dlen, nhead
+@@ -44,6 +43,7 @@
+         module procedure harm3d_vals
+       end interface
+ 
++      namelist /harm/  dfile, hfile, nt, indf, gfile
+       contains
+ 
+         function findx2harm(x2,args) result(diff)
+diff --git a/fluid_model_harmpi.f90 b/fluid_model_harmpi.f90
+index ccc6be1..cef0f33 100755
+--- a/fluid_model_harmpi.f90
++++ b/fluid_model_harmpi.f90
+@@ -7,7 +7,6 @@
+       use math, only: zbrent
+       implicit none
+ 
+-      namelist /harm/  dfile, hfile, nt, indf, gfile
+ 
+       character(len=100) :: dfile, hfile, gfile
+       integer :: n, ndumps, nt, indf, dlen, nhead
+@@ -86,6 +85,7 @@
+          module procedure limlin_array
+       end interface
+ 
++      namelist /harm/  dfile, hfile, nt, indf, gfile
+       contains
+ 
+         function findx2harmpi(x2,args) result(diff)
+diff --git a/fluid_model_hotspot.f90 b/fluid_model_hotspot.f90
+index 1329383..3a131c1 100755
+--- a/fluid_model_hotspot.f90
++++ b/fluid_model_hotspot.f90
+@@ -7,7 +7,6 @@
+ 
+   implicit none
+ 
+-  namelist /hotspot/ rspot, r0spot, n0spot, bl06
+   
+   real :: rspot,r0spot,n0spot,tspot
+   integer :: bl06
+@@ -24,6 +23,7 @@
+      module procedure advance_hotspot_timestep
+   end interface
+ 
++  namelist /hotspot/ rspot, r0spot, n0spot, bl06
+   contains
+ 
+     subroutine read_hotspot_inputs(ifile)
+diff --git a/fluid_model_hotspot_schnittman.f90 b/fluid_model_hotspot_schnittman.f90
+index 9f69493..5b1980b 100755
+--- a/fluid_model_hotspot_schnittman.f90
++++ b/fluid_model_hotspot_schnittman.f90
+@@ -7,7 +7,6 @@
+ 
+   implicit none
+ 
+-  namelist /hotspot/ rspot, r0spot, n0spot
+   
+   real :: rspot,r0spot,n0spot,tspot
+ 
+@@ -23,6 +22,7 @@
+      module procedure advance_schnittman_hotspot_timestep
+   end interface
+ 
++  namelist /hotspot/ rspot, r0spot, n0spot
+   contains
+ 
+     subroutine read_schnittman_hotspot_inputs(ifile)
+diff --git a/fluid_model_iharm.f90 b/fluid_model_iharm.f90
+index 18b8a0f..2c97920 100755
+--- a/fluid_model_iharm.f90
++++ b/fluid_model_iharm.f90
+@@ -7,7 +7,6 @@
+       use math, only: zbrent
+       implicit none
+ 
+-      namelist /harm/  dfile, hfile, nt, indf, gfile
+ 
+       character(len=100) :: dfile, hfile, gfile
+       integer :: n, ndumps, nt, indf, dlen, nhead
+@@ -67,6 +66,7 @@
+          module procedure findx2iharm_array
+       end interface
+ 
++      namelist /harm/  dfile, hfile, nt, indf, gfile
+       contains
+ 
+         function findx2iharm(x2,args) result(diff)
+diff --git a/fluid_model_koral.f90 b/fluid_model_koral.f90
+index 3be1a53..6592eac 100644
+--- a/fluid_model_koral.f90
++++ b/fluid_model_koral.f90
+@@ -11,7 +11,6 @@
+ 
+       !AC koral will read modified harm .in files for now
+       !AC should change to koral namelist
+-      namelist /harm/  dfile, hfile, nt, indf
+ 
+       logical :: doingkoralnth
+       character(len=100) :: dfile, hfile
+@@ -59,6 +58,7 @@
+         module procedure koral_vals
+       end interface
+ 
++      namelist /harm/  dfile, hfile, nt, indf
+       contains
+ 
+         subroutine transformbl2mksh3(th,r,x2,h,a,b,p)
+diff --git a/fluid_model_koral3d.f90 b/fluid_model_koral3d.f90
+index 9595d08..b44764d 100644
+--- a/fluid_model_koral3d.f90
++++ b/fluid_model_koral3d.f90
+@@ -11,7 +11,6 @@
+ 
+       !AC koral will read modified harm .in files for now
+       !AC should change to special koral namelist
+-      namelist /harm/  dfile, hfile, nt, indf
+ 
+       logical :: doingkoralnth,shortfile
+       character(len=100) :: dfile, hfile
+@@ -56,6 +55,7 @@
+         module procedure koral3d_vals
+       end interface
+ 
++      namelist /harm/  dfile, hfile, nt, indf
+       contains
+ 
+         ! transform Boyer-Lindquist theta coordinates to modified Kerr-Schild x2 at a corresponding array of r 
+diff --git a/fluid_model_mb09.f90 b/fluid_model_mb09.f90
+index 948fe5c..52a5acd 100755
+--- a/fluid_model_mb09.f90
++++ b/fluid_model_mb09.f90
+@@ -7,7 +7,6 @@
+       use math, only: zbrent
+       implicit none
+ 
+-      namelist /mb09/  dfile, gfile, nt, nfiles, indf, jonfix, offset, sim
+       integer :: nx1, nx2, nx3, ndumps, nt, nfiles, indf, defcoord, &
+            jonfix, dlen, offset, header_length, field_header_length
+       character(len=100) :: dfile, gfile
+@@ -64,6 +63,7 @@
+          module procedure calcrmks_single
+       end interface
+ 
++      namelist /mb09/  dfile, gfile, nt, nfiles, indf, jonfix, offset, sim
+       contains
+ 
+         function calcrmks(x1,xbr) result(r)
+@@ -131,9 +131,9 @@
+         end function umks2uks
+ 
+         function calcthmks(x2,r) result(th)
+-!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
+-!          JAD 4/9/2009
+-!          These parameter definitions are based on Jon's defcoord=9:
++!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
++!          JAD 4/9/2009
++!          These parameter definitions are based on Jon's defcoord=9:
+           real, dimension(:), intent(in) :: x2,r
+           real, dimension(size(x2)) :: th
+           real, dimension(size(r)) :: g,h
+@@ -153,9 +153,9 @@
+         end function calcthmks
+ 
+         function calcthmks_single(x2,r) result(th)
+-!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
+-!          JAD 4/9/2009
+-!          These parameter definitions are based on Jon's defcoord=9:
++!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
++!          JAD 4/9/2009
++!          These parameter definitions are based on Jon's defcoord=9:
+           real, intent(in) :: x2,r
+           real :: th
+           real :: rj,nj,r0j,rsj,q,g,h
+@@ -174,9 +174,9 @@
+         end function calcthmks_single
+ 
+         function calcthmks8(x2,r) result(th)
+-!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
+-!          JAD 4/9/2009
+-!          These parameter definitions are based on Jon's defcoord=9:
++!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
++!          JAD 4/9/2009
++!          These parameter definitions are based on Jon's defcoord=9:
+           real(8), dimension(:), intent(in) :: x2,r
+           real(8), dimension(size(x2)) :: th
+           real(8), dimension(size(r)) :: g,h
+@@ -196,9 +196,9 @@
+         end function calcthmks8
+ 
+         function calcthmks8_single(x2,r) result(th)
+-!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
+-!          JAD 4/9/2009
+-!          These parameter definitions are based on Jon's defcoord=9:
++!          Calculate theta from mks coordinate x2 (McKinney & Gammie (2006a)) and bl/ks coordinate r.
++!          JAD 4/9/2009
++!          These parameter definitions are based on Jon's defcoord=9:
+           real(8), intent(in) :: x2,r
+           real(8) :: th
+           real(8) :: rj,nj,r0j,rsj,q,g,h
+diff --git a/fluid_model_numdisk.f90 b/fluid_model_numdisk.f90
+index 4c4b9f3..341d171 100755
+--- a/fluid_model_numdisk.f90
++++ b/fluid_model_numdisk.f90
+@@ -6,7 +6,6 @@
+ !      use kerr, only: kerr_metric, lnrf_frame
+       implicit none
+ 
+-      namelist /numdisk/  dfile,tscl,rscl
+ 
+       character(len=40) :: dfile
+       integer :: nr, nphi
+@@ -40,6 +39,7 @@
+         module procedure numdisk_vals
+       end interface
+ 
++      namelist /numdisk/  dfile,tscl,rscl
+       contains
+ 
+         subroutine numdisk_vals(r,phi,a,T,omega)
+diff --git a/fluid_model_phatdisk.f90 b/fluid_model_phatdisk.f90
+index 03f9c9c..3d6d1a2 100755
+--- a/fluid_model_phatdisk.f90
++++ b/fluid_model_phatdisk.f90
+@@ -10,7 +10,6 @@
+ 
+   implicit none
+ 
+-  namelist /phatdisk/ nw, wmin, wmax, nfreq_tab, fmin, fmax, rmax, nr, sigt, fcol
+   
+   real :: fmin,fmax, wmin, wmax, rmax, sigt, fcol
+   integer :: nw, nfreq_tab, nr
+@@ -25,6 +24,7 @@
+      module procedure init_phatdisk
+   end interface
+ 
++  namelist /phatdisk/ nw, wmin, wmax, nfreq_tab, fmin, fmax, rmax, nr, sigt, fcol
+   contains
+ 
+     subroutine read_phatdisk_inputs(ifile)
+diff --git a/fluid_model_thickdisk.f90 b/fluid_model_thickdisk.f90
+index c24af36..20fe53d 100755
+--- a/fluid_model_thickdisk.f90
++++ b/fluid_model_thickdisk.f90
+@@ -7,7 +7,6 @@
+       use math, only: zbrent
+       implicit none
+ 
+-      namelist /thickdisk/  dfile, gfile, nt, nfiles, indf, jonfix, offset, sim, dindf, magcrit
+       integer :: nx1, nx2, nx3, ndumps, nt, nfiles, indf, defcoord, &
+            jonfix, dlen, offset, &
+            header_length, field_header_length, dindf, magcrit
+@@ -70,6 +69,7 @@
+ !         module procedure get_header_lengths
+ !      end interface
+ 
++      namelist /thickdisk/  dfile, gfile, nt, nfiles, indf, jonfix, offset, sim, dindf, magcrit
+       contains
+ 
+         subroutine coord_def
+diff --git a/fluid_model_thindisk.f90 b/fluid_model_thindisk.f90
+index 2b5ec7f..1c48249 100755
+--- a/fluid_model_thindisk.f90
++++ b/fluid_model_thindisk.f90
+@@ -7,7 +7,6 @@
+ 
+   implicit none
+ 
+-  namelist /thindisk/ mbh, mdot
+   
+   real :: mbh, mdot, rin, rout
+ 
+@@ -19,6 +18,7 @@
+      module procedure init_thindisk
+   end interface
+ 
++  namelist /thindisk/ mbh, mdot
+   contains
+ 
+     subroutine read_thindisk_inputs(ifile)
+diff --git a/grtrans_program.f90 b/grtrans_program.f90
+index 7684325..ffae8aa 100755
+--- a/grtrans_program.f90
++++ b/grtrans_program.f90
+@@ -1,10 +1,10 @@
+        program call_grtrans
+        implicit none
+ 
+-       namelist /files/ ifile, ofile
+ 
+        character(len=200) :: ifile, ofile
+        character(len=40) :: readfile
++       namelist /files/ ifile, ofile
+        readfile='files.in'
+        open(unit=8,file=readfile)
+        read(8,nml=files)
+diff --git a/read_inputs.f90 b/read_inputs.f90
+index 96ca985..6cdb3ae 100755
+--- a/read_inputs.f90
++++ b/read_inputs.f90
+@@ -5,20 +5,6 @@
+ 
+       implicit none
+ 
+-      namelist /geodata/   standard,mumin,mumax,nmu,phi0,spin, uout,uin, rcut, &
+-       nrotype, gridvals, nn, i1, i2, extra, debug
+-      namelist /fluiddata/ fname, dt, nt, nload, nmdot, mdotmin, mdotmax, sigcut
+-      namelist /emisdata/  ename, mbh, nfreq, fmin, fmax, muval, gmin, gmax, p1, p2, jetalpha, &
+-           stype, delta, nweights, coefindx
+-      namelist /general/   use_geokerr, nvals, iname, cflag
+-! namelists for fluid models
+-! AC koral will share same structure as harm...
+-      namelist /harm/  fdfile, fgfile, fhfile, fnt, fnfiles, findf, fjonfix, &
+-           foffset, fsim, fdindf, fmagcrit, fscalefac
+-      namelist /analytic/ fnw, fwmin, fwmax, fnfreq_tab, ffmin, ffmax, frmax, fnr, fsigt, ffcol, &
+-           frspot,fr0spot,fn0spot,ftscl,frscl,fmdot,fnscl,fnnthscl,fnnthp,fbeta,fbl06,fnp,ftp, &
+-           frin,frout,fthin,fthout,fphiin,fphiout
+-      
+       integer :: standard,nrotype,nro,nphi,nup,nvals,nfreq,nmu,cflag, nt,nmdot, &
+            nload,extra,i1,i2,debug
+       logical :: use_geokerr
+@@ -38,6 +24,25 @@
+            ffmax,frmax,fsigt,ffcol,fmdot,fnscl,fnnthscl,fnnthp,fbeta,fnp,ftp, &
+            frin,frout,fthin,fthout,fphiin,fphiout,fscalefac
+       real(kind=8), dimension(:), allocatable :: epotherargs
++
++! namelists moved here (after declarations) for gfortran >= 10 compatibility:
++! original placement was before the type declarations, which newer gfortran
++! rejects with "Symbol ... in namelist ... must be declared before the namelist
++! is declared."  Semantics unchanged.
++      namelist /geodata/   standard,mumin,mumax,nmu,phi0,spin, uout,uin, rcut, &
++       nrotype, gridvals, nn, i1, i2, extra, debug
++      namelist /fluiddata/ fname, dt, nt, nload, nmdot, mdotmin, mdotmax, sigcut
++      namelist /emisdata/  ename, mbh, nfreq, fmin, fmax, muval, gmin, gmax, p1, p2, jetalpha, &
++           stype, delta, nweights, coefindx
++      namelist /general/   use_geokerr, nvals, iname, cflag
++! namelists for fluid models
++! AC koral will share same structure as harm...
++      namelist /harm/  fdfile, fgfile, fhfile, fnt, fnfiles, findf, fjonfix, &
++           foffset, fsim, fdindf, fmagcrit, fscalefac
++      namelist /analytic/ fnw, fwmin, fwmax, fnfreq_tab, ffmin, ffmax, frmax, fnr, fsigt, ffcol, &
++           frspot,fr0spot,fn0spot,ftscl,frscl,fmdot,fnscl,fnnthscl,fnnthp,fbeta,fbl06,fnp,ftp, &
++           frin,frout,fthin,fthout,fphiin,fphiout
++
+       interface read_inputs
+         module procedure read_inputs
+       end interface

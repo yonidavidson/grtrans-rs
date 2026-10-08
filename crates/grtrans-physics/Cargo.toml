@@ -1,0 +1,10 @@
+[package]
+name = "grtrans-physics"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Fluid models and emissivities for grtrans-rs"
+
+[dependencies]
+grtrans-core.workspace = true

@@ -1,0 +1,89 @@
+{
+  "name": "sphacc",
+  "upstream_commit": "c76cb11fa1396516f38ba6f972c68fbb5b5ae984",
+  "upstream_worktree_dirty": true,
+  "python": "3.14.8",
+  "numpy": "2.3.4",
+  "platform": "macOS-26.6-arm64-arm-64bit-Mach-O",
+  "omp_num_threads": "8",
+  "wall_seconds": 17.9,
+  "date_utc": "2026-10-08T20:15:51Z",
+  "inputs": {
+    "fname": "SPHACC",
+    "nfreq": 25,
+    "nmu": 1,
+    "fmin": 100000000.0,
+    "fmax": 1000000000000000.0,
+    "ename": "SYNCHTHAV",
+    "nvals": 1,
+    "spin": 0.0,
+    "mbh": 1.0,
+    "standard": 1,
+    "nn": [
+      10000,
+      1,
+      100
+    ],
+    "gridvals": [
+      0.0,
+      400.0,
+      0.0,
+      0.0
+    ],
+    "uout": 0.0025,
+    "oname": "sphacc_abs.out"
+  },
+  "files": {
+    "ivals.npy": {
+      "sha256": "10c52f0d77974806ba57ba96b76e0106d7cbf50bdd1eebe95b2c29cd4bf8108f",
+      "raw": "ivals.f64.bin",
+      "raw_sha256": "fff1f411dfe33eb86e389eaac53b679027498f346077ead6f168c2de576ea597",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        10000,
+        1,
+        25
+      ],
+      "dtype": "float64"
+    },
+    "ab.npy": {
+      "sha256": "ffd08302761de3bb1de5f975943d96af507beddb8e802930e46efdf7e294cdd6",
+      "raw": "ab.f64.bin",
+      "raw_sha256": "e20a6f915521af5df93555ee104ae0b31f4cd93493a5e453e7977e1079892673",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        10000,
+        2
+      ],
+      "dtype": "float64"
+    },
+    "nu.npy": {
+      "sha256": "b5461b04b3c69b67b8972fa2369231f83cbbee39e15683f8aeed95bde8d50d84",
+      "raw": "nu.f64.bin",
+      "raw_sha256": "1272284f544291e47a72011ef3ba71a9cfb2d19cf569c8bb02e3b08593c9f900",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        25
+      ],
+      "dtype": "float64"
+    },
+    "spec.npy": {
+      "sha256": "a24a581464e9682a0a5dfc3eb0f8773c35b57b34d3dfc2081384853650174feb",
+      "raw": "spec.f64.bin",
+      "raw_sha256": "e9ad79c2ca18b25d88b1ed5f126b74a07da3cbc5f1d3c7ca2e291c4c8d97477f",
+      "raw_dtype": "little-endian float64",
+      "shape": [
+        25,
+        1
+      ],
+      "dtype": "float64"
+    }
+  },
+  "upstream_pickle": "test_grtrans_sphacc_spectrum.p",
+  "rel_err_vs_upstream_pickle": 0.004542216175745756,
+  "upstream_pickle_intensity_profile": {
+    "file": "test_grtrans_sphacc_intensity.p",
+    "slice": "ivals[:,0,14]",
+    "rel_err": 0.002967863370962745
+  }
+}
