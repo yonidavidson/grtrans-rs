@@ -1,6 +1,6 @@
 //! Polarized power-law synchrotron coefficients validated against the
 //! Fortran fixture.
-use grtrans_physics::polsynch::{polsynchpl, synchpl};
+use grtrans_physics::polsynch::{polsynchpl, polsynchth, synchemis, synchpl};
 
 const FIXTURE: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -80,12 +80,22 @@ fn polsynchpl_matches_fortran() {
     let gmin = vec![100.0f64; nu.len()];
     let ours_pl = polsynchpl(&nu, &nnth, &b, &th, &p, &gmin, 1e5);
     let ours_un = synchpl(&nu, &nnth, &b, &th, &p, &gmin, 1e5);
+    let tt = vec![
+        1.0e10, 3.0e10, 1.0e11, 1.0e9, 3.0e11, 5.0e9, 2.0e10, 1.0e12, 1.0e8, 4.0e10, 1.0e11, 7.0e9,
+    ];
+    let ours_th = polsynchth(&nu, &nnth, &b, &tt, &th);
+    let ours_mh = synchemis(&nu, &nnth, &b, &tt);
     let mut i = 0usize;
     let mut worst = 0.0f64;
     let mut worst_desc = String::new();
     for line in text.lines() {
         if line.starts_with('#') {
-            section = "synch";
+            section = match line {
+                "# synchpl" => "synch",
+                "# polsynchth" => "th",
+                "# synchemis" => "mh",
+                _ => section,
+            };
             i = 0;
             continue;
         }
@@ -93,21 +103,20 @@ fn polsynchpl_matches_fortran() {
             .split_whitespace()
             .map(|t| t.parse().unwrap())
             .collect();
-        let row = if section == "pl" {
-            ours_pl[i]
-        } else {
-            ours_un[i]
+        let row = match section {
+            "pl" => ours_pl[i],
+            "synch" => ours_un[i],
+            "th" => ours_th[i],
+            _ => ours_mh[i],
         };
-        // upstream `synchpl` only sets columns 1 and 5 (jI, alphaI); the
-        // remaining columns of its output array are left uninitialized, so
-        // only those two are comparable for the unpolarized variant.
-        let cols: Vec<usize> = if section == "pl" {
+        // upstream `synchpl`/`synchemis` only set columns 1 and 5 (jI,
+        // alphaI); the remaining columns are left uninitialized upstream.
+        let cols: Vec<usize> = if section == "pl" || section == "th" {
             (0..11).collect()
         } else {
             vec![0, 4]
         };
         for q in cols {
-            // absolute comparison with a scale based on the largest coefficient
             let scale = v
                 .iter()
                 .cloned()

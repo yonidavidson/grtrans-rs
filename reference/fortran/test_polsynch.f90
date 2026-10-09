@@ -4,6 +4,7 @@ program test_polsynch
    implicit none
    integer, parameter :: n = 12
    real(8) :: nu(n), nnth(n), b(n), th(n), p(n), gmin(n), gmax
+   real(8) :: tt(n)
    real(8) :: e(n, 11)
    integer :: i
    ! values spanning the FFJET regime
@@ -19,6 +20,7 @@ program test_polsynch
    p    = 3.5d0
    gmin = 100.d0
    gmax = 1.0d5
+   tt = (/1.0d10, 3.0d10, 1.0d11, 1.0d9, 3.0d11, 5.0d9, 2.0d10, 1.0d12, 1.0d8, 4.0d10, 1.0d11, 7.0d9/)
    call initialize_polsynchpl(4)
    call polsynchpl(nu, nnth, b, th, p, gmin, gmax, e)
    do i = 1, n
@@ -27,6 +29,17 @@ program test_polsynch
    ! also the unpolarized variant
    write(6, '(A)') '# synchpl'
    call synchpl(nu, nnth, b, th, p, gmin, gmax, e)
+   do i = 1, n
+      write(6, '(11(ES24.16E3,1X))') e(i, :)
+   end do
+   ! thermal (polarized and Mahadevan)
+   write(6, '(A)') '# polsynchth'
+   call polsynchth(nu, nnth, b, tt, th, e)
+   do i = 1, n
+      write(6, '(11(ES24.16E3,1X))') e(i, :)
+   end do
+   write(6, '(A)') '# synchemis'
+   call synchemis(nu, nnth, b, tt, e)
    do i = 1, n
       write(6, '(11(ES24.16E3,1X))') e(i, :)
    end do

@@ -5,7 +5,7 @@
 //! models (BB/FBB/BBPOL), and the frame rotations/scalings applied by the
 //! driver.
 
-use crate::polsynch::{bnu, polsynchpl, synchpl};
+use crate::polsynch::{bnu, polsynchpl, polsynchth, synchemis, synchpl};
 use grtrans_core::chandra::interp_chandra_tab24_f32;
 
 /// Upstream emissivity type constants (`emis.f90` lines 10-17).
@@ -215,6 +215,18 @@ impl Emis {
                 // lambda(e): e%j=1, e%K=0
                 for i in 0..npts {
                     kb[i * 11] = 1.0;
+                }
+            }
+            etype::EPOLSYNCHTH => {
+                let out = polsynchth(nu, &self.ncgs, &self.bcgs, &self.tcgs, &self.incang);
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
+            etype::ESYNCHTHAV => {
+                let out = synchemis(nu, &self.ncgs, &self.bcgs, &self.tcgs);
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
                 }
             }
             etype::EPOLSYNCHPL => {

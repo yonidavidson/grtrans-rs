@@ -294,3 +294,134 @@ pub fn synchpl(
     }
     out
 }
+
+// ---------------------------------------------------------------------------
+// Thermal synchrotron (upstream polsynchth, synchemis and their fitting
+// functions; Huang et al. 2009, Shcherbakov 2008, Mahadevan et al. 1996).
+// ---------------------------------------------------------------------------
+
+/// Upstream `shffunc` (Shcherbakov 2008 fitting function F(X)).
+pub fn shffunc(x: f64) -> f64 {
+    2.011 * (-x.powf(1.035) / 4.7).exp()
+        - (x / 2.0).cos() * (-x.powf(1.2) / 2.73).exp()
+        - 0.011 * (-x / 47.2).exp()
+}
+
+/// Upstream `jffunc` (modified F(X) matching the Jones & Hardee limit).
+pub fn jffunc(x: f64) -> f64 {
+    let extraterm = (0.011 * (-x / 47.2).exp()
+        - 2f64.powf(-1.0 / 3.0) / 3f64.powf(23.0 / 6.0) * PI * 1e4 * (x + 1e-16).powf(-8.0 / 3.0))
+        * (0.5 + 0.5 * ((x.ln() - 120f64.ln()) / 0.1).tanh());
+    2.011 * (-x.powf(1.035) / 4.7).exp()
+        - (x / 2.0).cos() * (-x.powf(1.2) / 2.73).exp()
+        - 0.011 * (-x / 47.2).exp()
+        + extraterm
+}
+
+/// Upstream `shgmfunc` (modified Shcherbakov 2008 G(X)).
+pub fn shgmfunc(x: f64) -> f64 {
+    0.43793091 * (1.0 + 0.00185777 * x.powf(1.50316886)).ln()
+}
+
+/// Upstream `iix` (Mahadevan et al. 1996 fitting function).
+pub fn iix(x: f64) -> f64 {
+    2.5651
+        * (1.0 + 1.92 / x.powf(1.0 / 3.0) + 0.9977 / x.powf(2.0 / 3.0))
+        * (-1.8899 * x.powf(1.0 / 3.0)).exp()
+}
+
+/// Upstream `iqx`.
+pub fn iqx(x: f64) -> f64 {
+    2.5651
+        * (1.0 + 0.93193 / x.powf(1.0 / 3.0) + 0.499873 / x.powf(2.0 / 3.0))
+        * (-1.8899 * x.powf(1.0 / 3.0)).exp()
+}
+
+/// Upstream `ivx`.
+pub fn ivx(x: f64) -> f64 {
+    (1.81384 / x + 3.42319 / x.powf(2.0 / 3.0) + 0.0292545 / x.sqrt() + 2.03773 / x.powf(1.0 / 3.0))
+        * (-1.8899 * x.powf(1.0 / 3.0)).exp()
+}
+
+/// Upstream `ipx` (Mahadevan et al. 1998 fitting function).
+pub fn ipx(x: f64) -> f64 {
+    4.0505 / (x.ln() / 6.0).exp()
+        * (1.0 + 0.40 / x.sqrt().sqrt() + 0.5316 / x.sqrt())
+        * (-1.8899 * (x.ln() / 3.0).exp()).exp()
+}
+
+/// Upstream `polsynchth`: polarized thermal synchrotron coefficients
+/// (11 outputs per point).
+pub fn polsynchth(nu: &[f64], n: &[f64], b: &[f64], t: &[f64], theta: &[f64]) -> Vec<[f64; 11]> {
+    use grtrans_core::bessel::{besselk, besselk0, besselk1};
+    let np = nu.len();
+    let mut out = vec![[0.0f64; 11]; np];
+    let thetaemin = 1e-10;
+    for i in 0..np {
+        let thetae = K * t[i] / ME / C / C + thetaemin;
+        let sin_th = theta[i].sin();
+        let nuc = 3.0 * EC * b[i] * sin_th / 4.0 / PI / ME / C * thetae * thetae + 1.0;
+        let xm = nu[i] / nuc;
+        let ji = EC * EC / C / 3.0f64.sqrt() / 2.0 * n[i] / (thetae * thetae) * nu[i] * iix(xm);
+        let jq = EC * EC / C / 3.0f64.sqrt() / 2.0 * n[i] / (thetae * thetae) * nu[i] * iqx(xm);
+        let jv =
+            4.0 * EC * EC / C / 3.0 / 3.0f64.sqrt() / theta[i].tan() * n[i] / 2.0 / thetae.powi(3)
+                * nu[i]
+                * ivx(xm);
+        let ju = 0.0;
+        let bnutnu = bnu(&[t[i]], nu[i])[0];
+        let ai = ji / bnutnu;
+        let aq = jq / bnutnu;
+        let av = jv / bnutnu;
+        let au = ju / bnutnu;
+        let rhou = au;
+        let wp2 = 4.0 * PI * n[i] * EC * EC / ME;
+        let omega0 = EC * b[i] / ME / C;
+        let xarg = thetae * (2.0f64.sqrt() * sin_th * (1e3 * omega0 / 2.0 / PI / nu[i])).sqrt();
+        let (eps11m22, eps12);
+        if thetae > 1e-2 {
+            let k1k2 = besselk1(1.0 / thetae) / besselk(2, 1.0 / thetae);
+            eps11m22 = jffunc(xarg) * wp2 * omega0 * omega0 / (2.0 * PI * nu[i]).powi(4)
+                * (k1k2 + 6.0 * thetae)
+                * sin_th
+                * sin_th;
+            let step = 0.5 + 0.5 * ((thetae - 1.0) / 0.05).tanh();
+            eps12 = wp2 * omega0 / (2.0 * PI * nu[i]).powi(3)
+                * (besselk0(1.0 / thetae) - step * shgmfunc(xarg))
+                / besselk(2, 1.0 / thetae)
+                * theta[i].cos();
+        } else {
+            eps11m22 = jffunc(xarg) * wp2 * omega0 * omega0 / (2.0 * PI * nu[i]).powi(4)
+                * (1.0 + 6.0 * thetae)
+                * sin_th
+                * sin_th;
+            eps12 = wp2 * omega0 / (2.0 * PI * nu[i]).powi(3) * theta[i].cos();
+        }
+        let rhov = 2.0 * PI * nu[i] / C * eps12;
+        let rhoq = 2.0 * PI * nu[i] / 2.0 / C * eps11m22;
+        out[i] = [ji, jq, ju, jv, ai, aq, au, av, rhoq, rhou, rhov];
+    }
+    out
+}
+
+/// Upstream `synchemis` (Mahadevan et al. 1996 unpolarized thermal
+/// synchrotron; used by `SYNCHTHAV`).
+pub fn synchemis(nu: &[f64], n: &[f64], b: &[f64], t: &[f64]) -> Vec<[f64; 11]> {
+    let np = nu.len();
+    let mut out = vec![[0.0f64; 11]; np];
+    let thetaemin = 1e-10;
+    for i in 0..np {
+        let thetae = K * t[i] / ME / C2 + thetaemin;
+        let nucrit = 3.0 * EC * b[i] / (4.0 * PI * ME * C) * thetae * thetae + 1.0;
+        let xm = nu[i] / nucrit;
+        let jnu = 4.43e-30 / 2.0 * nu[i] * n[i] * ipx(xm) / (thetae * thetae);
+        let anu = if jnu.abs() > 0.0 {
+            jnu / bnu(&[t[i]], nu[i])[0]
+        } else {
+            0.0
+        };
+        out[i][0] = jnu;
+        out[i][4] = anu;
+    }
+    out
+}
