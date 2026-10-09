@@ -8,3 +8,4 @@ description = "geokerr Kerr geodesics and camera geometry for grtrans-rs"
 
 [dependencies]
 grtrans-core.workspace = true
+num-complex = "0.4"
