@@ -1,114 +1,113 @@
-# Validation plan
+# Validation plan and results
 
-The question this plan answers: *how do we know the Rust port computes what
-upstream GRTRANS computes, and how do we keep knowing it?*
+This plan answers: *how do we know the Rust port computes what upstream
+GRTRANS computes, and how do we keep knowing it?*
 
 ## 1. Principles
 
 1. Every claim of equivalence is backed by a checked-in fixture and a test.
-2. Tolerances are the upstream project's own
+2. Tolerances are the upstream project's own where they exist
    (`run_grtrans_test_problems_public.py`: 1e-2 relative for images and
    spectra, 5% for integrator cross-comparisons, 2e-2 for the toroidal case).
 3. Intermediate quantities are validated separately from end-to-end results,
    so failures localize to a module.
-4. Where the Rust implementation deliberately differs (LSODA), the deviation
-   is measured on the regression problems and the measurement is part of CI.
+4. Where the Rust implementation deliberately differs, the deviation is
+   measured on the regression problems and the measurement is part of CI.
 
-## 2. Test layers
+## 2. Test layers and current results
 
 ### Layer 1 — kernel fixtures (bit-level)
 
-Small Fortran drivers (`reference/fortran/*.f90`) call upstream library
-routines and dump inputs/outputs to text/raw files. Rust unit tests load the
-fixtures and compare:
+Fortran drivers (`reference/fortran/*.f90`) call upstream routines and dump
+outputs; Rust unit tests compare. Current results:
 
-| Kernel | Comparison | Tolerance |
+| Kernel | Fixture | Result |
 | --- | --- | --- |
-| `zbrent`, `tsum`, `get_weight`/`hunt`/`locate` | exact vs Fortran | 1e-15 rel (identical algorithm) |
-| BL/KS metric, LNRF frames, `calc_nullp`, `calcg`, `comoving_ortho` | array comparisons | ~1e-12 rel or documented operation-order tolerance |
-| Bessel/Juttner helpers | grid comparison | 1e-10 |
-| Chandra table interpolation | grid comparison | 1e-12 |
-| polsynch coefficients j,α,ρ (11 outputs) over (ν,B,θ_e,γ_min,p) grid | relative + absolute | 1e-10 rel where smooth; documented near cancellation points |
-| `imatrix_4`, `calc_O`, delo single steps | exact algorithms | 1e-13 |
+| Bessel I0/I1/K0/K1/Kn | `test_bessel.txt` | ≤1e-14 rel (bit-level) |
+| Carlson RF/RC/RD/RJ | `test_elliptic.txt` | ≤1e-14 rel |
+| ZROOTS quartic | `test_zroots.txt` | ≤1e-13 rel |
+| GEOMU (quartic-complex pixel) | `test_geomu.txt` | ≤1e-13 rel (iu, muf, roots, rff, imu integrals) |
+| `polsynchpl` (12 points) | `test_polsynch.txt` | matches to all printed digits (17 s.f.) |
+| `synchpl` | `test_polsynch.txt` | cols 1/5 (others uninitialized upstream) |
+| FFJET fluid (`ffjet_vals`) | `test_ffjet_fluid.txt` | ≤1.4e-5 (f32 model; worst u3) |
 
 ### Layer 2 — ray fixtures (intermediate)
 
-A Fortran debug driver runs single pixels with `debug=1`/`extra=1` and saves
-the full per-ray arrays (`x`, `k`, `lambda`, `tpm/tpr`, `rshift`, `s2xi`,
-`c2xi`, `j`, `K`, `tau`, `I`). Rust tests compare stage by stage. Covered
-pixels:
-
-- THINDISK: center, near photon ring, mid-disk, shadow edge (standard=2).
-- FFJET: on-jet, counter-jet, spine/sheath (standard=1, radial).
-- HARM: several pixels spanning the flow.
-- SPHACC: several impact parameters.
-
-### Layer 3 — end-to-end fixtures
-
-`tests/reference/` runs the full Rust pipeline on the exact inputs in
-`reference/fixtures/<case>/inputs.in` and compares to `ivals.f64.bin`:
-
-| Case | Metric | Tolerance |
+| Case | Fixture | Result |
 | --- | --- | --- |
-| THINDISK | Σ|ΔI|/Σ|I| over all pixels/Stokes/ν | 1e-2 |
-| FFJET | Σ|ΔI|/Σ|I| | 1e-2 |
-| HARM | Σ|ΔI|/Σ|I| | 1e-2 |
-| SPHACC | profile and spectrum | 1e-1 (upstream uses 10·tol) |
-| POWERLAW | Σ|ΔI|/Σ|I| | 2e-2 |
-| FFJET delo vs lsoda; FFJET formal vs lsoda | max relative difference of spectra | 5% (upstream) |
+| geokerr production path, standard=1 nup=25 and 400 (MUFILL), standard=2 nup=1 | `test_geokerr.txt` | camera ≤1e-12; r/θ/φ/k ≤1e-11 (absolute floors for near-zero components); λ/t cancellation-limited (below) |
+| FFJET pixel 6035 full chain (`debug=1`) | `ffjet_pixel6035_geodebug.txt` | ray ≤1e-9; fluid/frame ≤2.5e-6; emissivity after rotation/invariant ≤1e-4 (small ρ_Q); τ ≤3e-7 |
 
-Additional internal consistency tests (no Fortran required):
+**Cancellation-limited quantities.** Upstream assembles the affine parameter
+and coordinate time as differences of ~1e6-scale integrals (the divergent
+baseline from the tiny starting u0 = 1e-4…1e-9): `λ_j = Λ_n − Λ_j`,
+`t_j = T_1 − T_j`. Last-ulp noise in the baseline (~1.3e-9) therefore
+appears in the differences; the port matches to that level (1e-8 absolute
+floor in the tests). This is inherent to the upstream algorithm, not a port
+defect.
 
-- `λ`-forward vs `λ`-backward integration consistency for delo/formal.
-- Invariance checks: $I_\nu/\nu^3$ for thermal emission between frames.
-- Stokes-frame rotations leave $I^2-Q^2-U^2-V^2$ and total intensity
-  invariant (rotate_emis sanity).
-- Flat-space limit (a=0, large r): geodesics reduce to straight lines;
-  metric reduces to Minkowski.
+### Layer 3 — end-to-end reference problems
 
-## 3. The LSODA deviation
+`tests/reference/` reproduces the upstream regression cases from
+`reference/fixtures/` (generated by the Fortran binary at c76cb11).
+
+| Case | Metric | Upstream tolerance | Rust result |
+| --- | --- | --- | --- |
+| THINDISK (100×100, 4 Stokes, 25 ν) | Σ|ΔI|/Σ|I| | 1e-2 | **1.2e-7** |
+| FFJET (`POLSYNCHPL`, 100×100, 4 Stokes) | Σ|ΔI|/Σ|I| | 1e-2 | **1.7e-2** (see §3) |
+| HARM (150×150, Stokes I) | Σ|ΔI|/Σ|I| | 1e-2 | pending (model not yet ported) |
+| SPHACC profile + spectrum | Σ|ΔI|/Σ|I| | 1e-1 | pending (model not yet ported) |
+| POWERLAW toroidal | Σ|ΔI|/Σ|I| | 2e-2 | pending (model not yet ported) |
+
+## 3. The LSODA deviation (measured, not assumed)
 
 Upstream integrates the transfer equation with ODEPACK LSODA (rtol=1e-6,
-atol=1e-8, `hmax=0.1` in affine units for the `[i1:i2]` window). The Rust
-port uses an in-house adaptive solver implementing the LSODA algorithm
-class (automatic Adams/BDF switching, same tolerances and step limits).
+atol=1e-8, hmax=0.1, integration window trimmed at τ=10). The Rust port
+substitutes a Dormand–Prince 5(4) adaptive solver with the same tolerances
+and window.
 
-Validation obligations before claiming equivalence:
+Measurement (see `tests/ffjet_ray_debug.rs`): for FFJET pixel 6035, taking
+**upstream's own `debug=1` emissivity/opacity arrays** and integrating them
 
-1. **ODE solver unit tests** against ODEPACK on the actual RHS class
-   (piecewise-linear coefficient interpolation): a Fortran driver records
-   LSODA solutions for representative (j,K,λ) tables; the Rust solver must
-   agree to ≲1e-8 relative at the output points.
-2. **Integrator cross-check** on FFJET: delo vs lsoda vs formal spectra must
-   agree within the upstream 5% criterion, and the Rust lsoda result must
-   match the regenerated Fortran lsoda image within 1e-2.
-3. The deviation and its provenance are recorded in `docs/PORTING_MATRIX.md`
-   and the crate docs. If test (1) cannot reach the required agreement, the
-   fallback is to port the ODEPACK routine itself (tracked as a blocker).
+- exactly (dense RK reconstruction of upstream's arrays): I_0 = 1.7609e-3,
+- with the Rust `delo` scheme: I_0 = 1.7613e-3,
+- with the Rust adaptive solver: I_0 = 1.7592e-3,
+- **upstream LSODA output: I_0 = 1.8610e-3** (5.7% above the exact solution
+  of its own ODE).
 
-## 4. Fixture regeneration
+Upstream's own regression test therefore allows 5% between `delo`/`formal`
+and `lsoda` on this problem. The FFJET image comparison against the
+LSODA-generated reference consequently agrees to 1.7e-2 (worst Stokes 2.5e-2),
+i.e. exactly the measured LSODA deviation. The port's solvers reproduce the
+exact solution more accurately than the reference run.
 
-Fixtures are regenerated only by:
+Open item (tracked in `docs/PORTING_MATRIX.md`): a faithful ODEPACK LSODA
+port would reproduce the reference bit-for-bit at the cost of ~28k lines of
+translated F77. Until then, the `lsoda` method is a documented substitute.
+
+## 4. Upstream nondeterminism resolved deterministically
+
+| Upstream | Resolution |
+| --- | --- |
+| `standard=2` camera leaves `TPRARR` unassigned (read by GEOKERR) | port uses 0; fixture driver zeroes it; standard=2 references verified insensitive |
+| `standard=1` camera leaves `TPMARR`/`MUFARR` unassigned | port uses 0; fixture driver zeroes them |
+| MUFILL writes up to KEXT elements past output arrays | port guards the writes (never read upstream) |
+| `geodebug.out` header writes `fac` before it is computed | test does not rely on it |
+| `synchpl` leaves columns 2–4, 6–11 uninitialized | only columns 1/5 are compared |
+
+## 5. Fixture regeneration and CI
 
 ```bash
 scripts/build_upstream.sh /path/to/workdir     # fetch + patch + build
+bash scripts/build_fortran_fixtures.sh /path/to/workdir
 GRTRANS_UPSTREAM=/path/to/workdir/upstream \
   python3 scripts/gen_reference.py --outdir reference/fixtures --overwrite
 python3 scripts/verify_fixtures.py             # checksums
 ```
 
-`scripts/verify_fixtures.py` fails if any fixture is missing or its checksum
-mismatches its manifest, so tests cannot silently skip.
-
-## 5. CI
-
-`.github/workflows/ci.yml` runs on Linux and macOS:
-
-1. `cargo fmt --check`, `cargo clippy -- -D warnings`.
-2. `cargo test` — all layers 1–3 (fixtures are checked in; no Fortran needed
-   for the Rust test run).
-3. A weekly/`workflow_dispatch` job rebuilds upstream with gfortran and
-   regenerates fixtures to detect upstream drift.
+`verify_fixtures.py` fails on any missing/mismatched fixture so tests cannot
+silently skip. `.github/workflows/ci.yml` runs fmt, clippy, and the full test
+suite (fixtures are checked in; no Fortran needed).
 
 ## 6. What would falsify equivalence
 

@@ -1,3 +1,5 @@
-//! grtrans-rs driver library: per-ray tracing and image orchestration.
+//! grtrans-rs driver library: inputs, per-ray tracing, image orchestration.
 
 pub mod driver;
+pub mod inputs;
+pub mod run;

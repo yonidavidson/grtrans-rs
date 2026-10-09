@@ -12,6 +12,7 @@
 use crate::models::ffjet::{self, FfjetData};
 use crate::models::thindisk::{self, ThindiskState};
 use grtrans_core::four_vector::FourVector;
+use std::sync::Arc;
 
 /// Upstream model constants (`fluid.f90` lines 40-43).
 pub mod model {
@@ -162,7 +163,7 @@ pub enum ModelState {
     #[default]
     None,
     Thindisk(ThindiskState),
-    Ffjet(FfjetData),
+    Ffjet(Arc<FfjetData>),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -261,7 +262,7 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
             let data = ffjet::initialize_ffjet_model(std::path::Path::new(&args.dfile));
             LoadedFluid {
                 name: fname.to_string(),
-                state: ModelState::Ffjet(data),
+                state: ModelState::Ffjet(Arc::new(data)),
             }
         }
         _ => LoadedFluid {
