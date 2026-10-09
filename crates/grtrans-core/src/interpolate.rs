@@ -221,3 +221,78 @@ mod tests {
         assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 0.5, 0.0), 2.0);
     }
 }
+
+/// Single-precision `hunt` (upstream `hunt` with default `real` arrays).
+pub fn hunt_f32(xx: &[f32], x: f32, jlo: isize) -> isize {
+    let n = xx.len() as isize;
+    let ascnd = xx[xx.len() - 1] >= xx[0];
+    let mut jlo = jlo;
+    let mut jhi;
+    if jlo <= 0 || jlo > n {
+        jlo = 0;
+        jhi = n + 1;
+    } else {
+        let mut inc: isize = 1;
+        if (x >= xx[(jlo - 1) as usize]) == ascnd {
+            loop {
+                jhi = jlo + inc;
+                if jhi > n {
+                    jhi = n + 1;
+                    break;
+                } else if (x < xx[(jhi - 1) as usize]) == ascnd {
+                    break;
+                } else {
+                    jlo = jhi;
+                    inc += inc;
+                }
+            }
+        } else {
+            jhi = jlo;
+            loop {
+                jlo = jhi - inc;
+                if jlo < 1 {
+                    jlo = 0;
+                    break;
+                } else if (x >= xx[(jlo - 1) as usize]) == ascnd {
+                    break;
+                } else {
+                    jhi = jlo;
+                    inc += inc;
+                }
+            }
+        }
+    }
+    loop {
+        if jhi - jlo <= 1 {
+            if x == xx[xx.len() - 1] {
+                jlo = n - 1;
+            }
+            if x == xx[0] {
+                jlo = 1;
+            }
+            break;
+        } else {
+            let jm = (jhi + jlo) / 2;
+            if (x >= xx[(jm - 1) as usize]) == ascnd {
+                jlo = jm;
+            } else {
+                jhi = jm;
+            }
+        }
+    }
+    jlo
+}
+
+/// Single-precision `get_weight`.
+pub fn get_weight_f32(xx: &[f32], x: f32, jlo: isize) -> (f32, isize) {
+    let j = hunt_f32(xx, x, jlo);
+    assert!(
+        j >= 1 && (j as usize) < xx.len(),
+        "get_weight_f32: bracket index {j} out of range for len {}",
+        xx.len()
+    );
+    let lo = xx[(j - 1) as usize];
+    let hi = xx[j as usize];
+    let weight = (x - lo) / (hi - lo);
+    (weight, j)
+}

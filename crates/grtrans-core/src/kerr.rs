@@ -43,6 +43,24 @@ pub fn blmetric_con(r: f64, th: f64, a: f64) -> Metric {
     Metric(m)
 }
 
+/// Boyer-Lindquist covariant metric computed in single precision and
+/// widened to f64 (upstream `blmetric_cov_real`). Used by the thin-disk
+/// fluid model, which passes `real` arguments and receives an `real` array.
+pub fn blmetric_cov_f32(r: f32, th: f32, a: f32) -> Metric {
+    let cth = th.cos();
+    let sth = th.sin();
+    let delta = r * r - 2.0 * r + a * a;
+    let rho2 = r * r + a * a * cth * cth;
+    let sigma = (r * r + a * a).powi(2) - a * a * delta * sth * sth;
+    let mut m = [0.0f64; 10];
+    m[0] = (-(delta - a * a * sth * sth) / rho2) as f64;
+    m[3] = (-2.0 * a * r * sth * sth / rho2) as f64;
+    m[4] = (rho2 / delta) as f64;
+    m[7] = rho2 as f64;
+    m[9] = (sigma / rho2 * sth * sth) as f64;
+    Metric(m)
+}
+
 /// Kerr-Schild spherical covariant metric (upstream `ksmetric_cov`).
 pub fn ksmetric_cov(r: f64, th: f64, _ph: f64, a: f64) -> Metric {
     let ctheta = th.cos();

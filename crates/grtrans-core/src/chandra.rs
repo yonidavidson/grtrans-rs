@@ -82,3 +82,37 @@ mod tests {
         assert!((i5 - 0.86637).abs() < 1e-6);
     }
 }
+
+/// The embedded table as single-precision values (upstream reads
+/// `ch_mu, ch_I, ch_delta` as default `real`).
+fn table_f32() -> &'static ChandraTableF32 {
+    static TABLE: OnceLock<ChandraTableF32> = OnceLock::new();
+    TABLE.get_or_init(|| {
+        let t = table();
+        ChandraTableF32 {
+            mu: t.mu.iter().map(|v| *v as f32).collect(),
+            i: t.i.iter().map(|v| *v as f32).collect(),
+            delta: t.delta.iter().map(|v| *v as f32).collect(),
+        }
+    })
+}
+
+/// Single-precision table (upstream `ch_mu`, `ch_I`, `ch_delta`).
+#[derive(Debug)]
+pub struct ChandraTableF32 {
+    pub mu: Vec<f32>,
+    pub i: Vec<f32>,
+    pub delta: Vec<f32>,
+}
+
+/// Interpolate intensity and polarization degree in single precision,
+/// exactly as upstream `interp_chandra_tab24` does (its arguments are
+/// default `real`).
+pub fn interp_chandra_tab24_f32(mu: f32) -> (f32, f32) {
+    let t = table_f32();
+    let (weight, j) = crate::interpolate::get_weight_f32(&t.mu, mu, 0);
+    let j0 = (j - 1) as usize;
+    let i = (1.0 - weight) * t.i[j0] + weight * t.i[j0 + 1];
+    let del = (1.0 - weight) * t.delta[j0] + weight * t.delta[j0 + 1];
+    (i, del)
+}
