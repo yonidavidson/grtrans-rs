@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  rust:
+    name: Rust tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Format check
+        run: cargo fmt --all -- --check
+      - name: Clippy
+        run: cargo clippy --workspace --exclude grtrans-python --all-targets -- -D warnings
+      - name: Build
+        run: cargo build --workspace --exclude grtrans-python --release
+      - name: Test (all layers, fixtures checked in)
+        run: cargo test --workspace --exclude grtrans-python --release
+      - name: Fixture checksums
+        run: python3 scripts/verify_fixtures.py
+
+  python:
+    name: Python bindings (maturin)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build wheel
+        run: |
+          pip install maturin numpy
+          maturin build --release -m crates/grtrans-python/Cargo.toml --out dist
+          pip install dist/*.whl
+      - name: Python API test
+        run: python tests/python/test_python_api.py
+
+  reference-regeneration:
+    name: Upstream reference regeneration (manual)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: |
+          brew install gfortran cfitsio
+          pip install numpy astropy
+      - name: Build upstream and regenerate fixtures
+        run: |
+          scripts/build_upstream.sh "$RUNNER_TEMP/grtrans-work" /opt/homebrew/lib
+          bash scripts/build_fortran_fixtures.sh "$RUNNER_TEMP/grtrans-work"
+          GRTRANS_UPSTREAM="$RUNNER_TEMP/grtrans-work/upstream" \
+            python3 scripts/gen_reference.py --outdir reference/fixtures --overwrite
+          python3 scripts/verify_fixtures.py

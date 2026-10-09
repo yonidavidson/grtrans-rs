@@ -10,7 +10,6 @@
 
 use crate::constants::{G, MP, MSUN, PI, SIGT};
 use crate::four_vector::{FourVector, Metric};
-use std::f64::consts::PI as PI_F64;
 
 /// Boyer-Lindquist covariant metric components (upstream `blmetric_cov`).
 pub fn blmetric_cov(r: f64, th: f64, a: f64) -> Metric {
@@ -845,7 +844,7 @@ mod tests {
         // A Keplerian disk flow should give a finite, positive g factor
         let a = 0.9;
         let r = 8.0;
-        let th = PI_F64 / 2.0;
+        let th = PI / 2.0;
         let mut u = rms_vel(a, th, r);
         // magnetic field: radial-ish
         let mut b = FourVector::new([0.0, 1.0, 0.0, 0.0], blmetric_cov(r, th, a));
