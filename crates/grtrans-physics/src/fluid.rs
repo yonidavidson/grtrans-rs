@@ -9,6 +9,7 @@
 //! driver creates once (`load_fluid_model`) and mutates while tracing rays
 //! (`get_fluid_vars`).
 
+use crate::models::ffjet::{self, FfjetData};
 use crate::models::thindisk::{self, ThindiskState};
 use grtrans_core::four_vector::FourVector;
 
@@ -161,6 +162,7 @@ pub enum ModelState {
     #[default]
     None,
     Thindisk(ThindiskState),
+    Ffjet(FfjetData),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -225,6 +227,11 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
         "THINDISK" => {
             f.model = model::THINDISK;
         }
+        "FFJET" => {
+            f.model = model::FFJET;
+            f.bmag = vec![0.0; nup];
+            f.p = vec![0.0; nup];
+        }
         _ => {
             f.model = model::DUMMY;
         }
@@ -250,6 +257,13 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
                 state: ModelState::Thindisk(state),
             }
         }
+        "FFJET" => {
+            let data = ffjet::initialize_ffjet_model(std::path::Path::new(&args.dfile));
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Ffjet(data),
+            }
+        }
         _ => LoadedFluid {
             name: fname.to_string(),
             state: ModelState::None,
@@ -270,6 +284,14 @@ pub fn get_fluid_vars(
         (ModelState::Thindisk(state), model::THINDISK) => {
             thindisk::get_thindisk_fluidvars(state, x, k, a as f32, f)
         }
+        (ModelState::Ffjet(data), model::FFJET) => {
+            let (rho, p, bmag, u, b) = ffjet::ffjet_vals(data, x, a as f32);
+            f.rho = rho;
+            f.p = p;
+            f.bmag = bmag;
+            f.u = u;
+            f.b = b;
+        }
         _ => {
             for v in f.u.iter_mut() {
                 *v = FourVector::flat([0.0; 4]);
@@ -282,15 +304,33 @@ pub fn get_fluid_vars(
 }
 
 /// Upstream `convert_fluid_vars` (array version): fluid -> cgs emission
-/// quantities `(ncgs, bcgs, tcgs)`.
-pub fn convert_fluid_vars(f: &Fluid) -> (Vec<f64>, Vec<f64>, Vec<f64>) {
+/// quantities `(ncgs, ncgsnth, bcgs, tcgs)`.
+pub fn convert_fluid_vars(
+    f: &Fluid,
+    sp: &SourceParams,
+) -> (Vec<f64>, Vec<f64>, Vec<f64>, Vec<f64>) {
     let n = f.npts;
     match f.model {
         model::THINDISK => {
             // convert_fluidvars_thindisk: tcgs=f%rho, ncgs=1
             let tcgs: Vec<f64> = f.rho.iter().map(|v| *v as f64).collect();
-            (vec![1.0; n], vec![0.0; n], tcgs)
+            (vec![1.0; n], vec![0.0; n], vec![0.0; n], tcgs)
         }
-        _ => (vec![0.0; n], vec![0.0; n], vec![0.0; n]),
+        model::FFJET => {
+            // convert_fluidvars_ffjet: ncgsnth=rho*nfac, bcgs=bmag*bfac
+            let ncgsnth: Vec<f64> = f.rho.iter().map(|v| *v as f64 * sp.nfac).collect();
+            let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64 * sp.bfac).collect();
+            (vec![0.0; n], ncgsnth, bcgs, vec![0.0; n])
+        }
+        _ => (vec![0.0; n], vec![0.0; n], vec![0.0; n], vec![0.0; n]),
     }
+}
+
+/// Upstream `assign_source_params` for `stype='const'`: constant gmin/mu/
+/// jetalpha per point.
+pub fn assign_source_params(sp: &mut SourceParams) {
+    // CONST case (upstream select case(sp%type) case (CONST))
+    sp.gmin = vec![sp.gminval; sp.gmin.len().max(1)];
+    sp.jetalpha = vec![sp.jetalphaval; sp.jetalpha.len().max(1)];
+    sp.mu = vec![sp.muval; sp.mu.len().max(1)];
 }

@@ -1,21 +1,22 @@
 //! Per-ray driver: fluid, emissivity, transfer, output.
 //!
-//! Direct translation of `grtrans_driver.f90` (upstream GRTRANS). The
-//! integration path (npts > 1) uses `grtrans-transfer`; the single-point
-//! path (thin disk, hot spots) computes the intensity directly with the
-//! g^3 invariant scaling.
+//! Direct translation of `grtrans_driver.f90` (upstream GRTRANS).
 
 use grtrans_core::constants::{C2, G, MSUN};
 use grtrans_core::kerr::comoving_ortho;
 use grtrans_geodesics::rays::Ray;
-use grtrans_physics::emissivity::{invariant_emis, rotate_emis, Emis, EmisParams};
+use grtrans_physics::emissivity::{
+    invariant_emis, invariant_emis_g2, rotate_emis, Emis, EmisParams,
+};
+pub use grtrans_physics::fluid::SourceParams;
 use grtrans_physics::fluid::{
     convert_fluid_vars, get_fluid_vars, initialize_fluid_model, LoadedFluid,
 };
+use grtrans_transfer::{calc_opt_depth, integrate, Method};
 
 /// Upstream `rad_trans` object (per-ray integration state).
 pub struct RadTrans {
-    pub iflag: i32,
+    pub method: Method,
     pub neq: usize,
     pub npts: usize,
     /// intensity array, row-major (neq x npts)
@@ -24,33 +25,13 @@ pub struct RadTrans {
 
 impl RadTrans {
     pub fn new(iname: &str, npts: usize, neq: usize) -> Self {
-        let iflag = match iname {
-            "lsoda" => 0,
-            "delo" => 1,
-            "formal" => 2,
-            "lsodasph" => 3,
-            _ => panic!("iname not recognized: {iname}"),
-        };
         RadTrans {
-            iflag,
+            method: Method::from_name(iname),
             neq,
             npts,
             i: vec![0.0; neq * npts],
         }
     }
-}
-
-/// Per-ray result (upstream `ray_set` pixel values).
-#[derive(Clone, Debug, Default)]
-pub struct RayResult {
-    pub values: Vec<f64>,
-}
-
-/// Parameters of one driver invocation (upstream `source_params` subset).
-#[derive(Clone, Debug)]
-pub struct SourceParams {
-    pub mdot: f64,
-    pub mbh: f64,
 }
 
 /// Options for tracing one ray.
@@ -60,11 +41,31 @@ pub struct TraceOptions {
     pub iname: String,
     pub nvals: usize,
     pub freqs: Vec<f64>,
+    /// upstream `thin` (delo threshold)
+    pub thin: f64,
+    /// upstream integration tolerances
+    pub hmax: f64,
+    pub oatol: f64,
+    pub ortol: f64,
 }
 
-/// Trace one ray and return the Stokes vector (length `nvals`) for each
+impl Default for TraceOptions {
+    fn default() -> Self {
+        TraceOptions {
+            ename: "BB".to_string(),
+            iname: "lsoda".to_string(),
+            nvals: 1,
+            freqs: Vec::new(),
+            thin: 1e-2,
+            hmax: 0.1,
+            oatol: 1e-8,
+            ortol: 1e-6,
+        }
+    }
+}
+
+/// Trace one ray and return the Stokes vector (length `nvals`) per
 /// frequency, flattened as `[freq][stokes]`.
-#[allow(clippy::too_many_arguments)]
 pub fn trace_ray(
     loaded: &mut LoadedFluid,
     ray: &Ray,
@@ -94,7 +95,7 @@ pub fn trace_ray(
     let mut rshift = vec![0.0; npts];
     let mut cosne = vec![0.0; npts];
     for i in 0..npts {
-        let out = comoving_ortho(
+        let co = comoving_ortho(
             ray.x[i].data[1],
             ray.x[i].data[2],
             a,
@@ -105,19 +106,31 @@ pub fn trace_ray(
             &mut b[i],
             &mut kv[i],
         );
-        s2xi[i] = out.s2xi;
-        c2xi[i] = out.c2xi;
-        ang[i] = out.ang;
-        rshift[i] = out.g;
-        cosne[i] = out.cosne;
+        s2xi[i] = co.s2xi;
+        c2xi[i] = co.c2xi;
+        ang[i] = co.ang;
+        rshift[i] = co.g;
+        cosne[i] = co.cosne;
     }
     let mut r = RadTrans::new(&opts.iname, npts, nvals);
     let _ = extra;
     e.initialize(npts, &rshift, &ang, &cosne);
-    let (ncgs, bcgs, tcgs) = convert_fluid_vars(&f);
-    let _ = (&ncgs, &bcgs);
+    let (ncgs, ncgsnth, bcgs, tcgs) = convert_fluid_vars(&f, sp);
+    // assign_emis_params (all ported types)
     e.assign_params(&tcgs);
+    e.assign_synch_params(&ncgs, &ncgsnth, &bcgs, &tcgs);
+    // emis_model for the power-law synchrotron
+    if e.type_ == grtrans_physics::emissivity::etype::EPOLSYNCHPL
+        || e.type_ == grtrans_physics::emissivity::etype::ESYNCHPL
+    {
+        let mut gmin = sp.gmin.clone();
+        if gmin.len() < npts {
+            gmin = vec![sp.gminval; npts];
+        }
+        e.set_synchpl_model(sp.p1, &gmin, sp.gmax);
+    }
     let ep = EmisParams::default();
+    let _ = &ep;
     let lbh = G * sp.mbh * MSUN / C2;
     for k in 0..nfreq {
         let nu: Vec<f64> = rshift.iter().map(|g| opts.freqs[k] / g).collect();
@@ -138,7 +151,66 @@ pub fn trace_ray(
                 rotate_emis(&mut e, &s2xi, &c2xi);
             }
             if npts != 1 {
-                panic!("integrated rays require grtrans-transfer (not yet wired)");
+                invariant_emis_g2(&mut e, &rshift);
+                // scale emission close to 1 and put anu in cgs units
+                for v in e.j.iter_mut() {
+                    *v /= fac;
+                }
+                for v in e.kcoef.iter_mut() {
+                    *v *= lbh;
+                }
+                let alpha_i: Vec<f64> = (0..npts).map(|i| e.kcoef[i * e.nk]).collect();
+                let tau0 = calc_opt_depth(&ray.lambda, &alpha_i);
+                let tau: Vec<f64> = tau0.iter().map(|v| -v).collect();
+                if e.neq == 4 {
+                    let jv: Vec<[f64; 4]> = (0..npts)
+                        .map(|i| [e.j[i * 4], e.j[i * 4 + 1], e.j[i * 4 + 2], e.j[i * 4 + 3]])
+                        .collect();
+                    let kv: Vec<[f64; 7]> = (0..npts)
+                        .map(|i| {
+                            let b = i * e.nk;
+                            [
+                                e.kcoef[b],
+                                e.kcoef[b + 1],
+                                e.kcoef[b + 2],
+                                e.kcoef[b + 3],
+                                e.kcoef[b + 4],
+                                e.kcoef[b + 5],
+                                e.kcoef[b + 6],
+                            ]
+                        })
+                        .collect();
+                    let (intensity, nptsout) = integrate(
+                        r.method,
+                        &ray.lambda,
+                        &jv,
+                        &kv,
+                        &tau,
+                        opts.thin,
+                        opts.hmax,
+                        opts.oatol,
+                        opts.ortol,
+                    );
+                    r.npts = nptsout;
+                    for i in 0..npts {
+                        for q in 0..4 {
+                            r.i[q * npts + i] = intensity[i][q] * fac * lbh;
+                        }
+                    }
+                } else {
+                    let j1: Vec<f64> = (0..npts).map(|i| e.j[i]).collect();
+                    let k1: Vec<f64> = (0..npts).map(|i| e.kcoef[i * e.nk]).collect();
+                    let intensity = grtrans_transfer::radtrans_integrate_quadrature(
+                        &ray.lambda,
+                        &j1,
+                        &k1,
+                        &tau,
+                    );
+                    r.npts = npts;
+                    for i in 0..npts {
+                        r.i[i] = intensity[i] * fac * lbh;
+                    }
+                }
             } else {
                 invariant_emis(&mut e, &rshift, 3);
                 // grtrans_compute_intensity: r%I = transpose(e%j)
@@ -147,14 +219,10 @@ pub fn trace_ray(
                         r.i[q * npts + i] = e.j[i * e.neq + q];
                     }
                 }
-                let _ = &ep;
-                let _ = lbh;
             }
             for q in 0..nvals.min(e.neq) {
-                out[k * nvals + q] = r.i[q * npts + npts - 1];
+                out[k * nvals + q] = r.i[q * npts + r.npts - 1];
             }
-        } else {
-            // zero intensity
         }
     }
     out

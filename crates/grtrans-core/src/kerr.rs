@@ -199,6 +199,36 @@ pub fn lnrf_frame_inv(vr: f64, vt: f64, omega: f64, r: f64, a: f64, th: f64) -> 
     (vrl, vtl, vpl)
 }
 
+/// Inverse LNRF transform in single precision (upstream
+/// `lnrf_frame_inv_real`; selected by gfortran for FFJET's mixed-kind call).
+pub fn lnrf_frame_inv_f32(
+    vr: f32,
+    vt: f32,
+    omega: f32,
+    r: f32,
+    a: f32,
+    th: f32,
+) -> (f32, f32, f32) {
+    let mu = th.cos();
+    let d = r * r - 2.0 * r + a * a;
+    let ar = (r * r + a * a).powi(2) - a * a * d * (1.0 - mu * mu);
+    let rho = r * r + a * a * mu * mu;
+    let enu = (d * rho / ar).sqrt();
+    let emu1 = (rho / d).sqrt();
+    let emu2 = rho.sqrt();
+    let epsi = (1.0 - mu * mu).sqrt() * (ar / rho).sqrt();
+    let om = 2.0 * a * r / ar;
+    let mut vrl = enu / emu1 * vr;
+    let mut vtl = enu / emu2 * vt;
+    let mut vpl = enu / epsi * omega + om;
+    if !(d > 0.0) {
+        vrl = 0.0;
+        vtl = 0.0;
+        vpl = 0.0;
+    }
+    (vrl, vtl, vpl)
+}
+
 /// Covariant wave vector from the constants of motion (upstream
 /// `calc_nullp`).
 ///
@@ -503,7 +533,9 @@ pub fn comoving_ortho(
     let _ = &mut aa;
 
     let bdotb = b.dot(b);
-    let bdotk = b.dot(k);
+    // upstream re-computes bdotk from the *frame* components (spatial dot
+    // only; grtrans line 694), not as the BL inner product
+    let bdotk = bhat[1] * khat[1] + bhat[2] * khat[2] + bhat[3] * khat[3];
     let om = -k.dot(u);
     let om2 = om * om;
 

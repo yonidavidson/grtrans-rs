@@ -5,7 +5,7 @@
 //! models (BB/FBB/BBPOL), and the frame rotations/scalings applied by the
 //! driver.
 
-use crate::polsynch::bnu;
+use crate::polsynch::{bnu, polsynchpl, synchpl};
 use grtrans_core::chandra::interp_chandra_tab24_f32;
 
 /// Upstream emissivity type constants (`emis.f90` lines 10-17).
@@ -51,6 +51,7 @@ pub struct Emis {
     pub gmin: Vec<f64>,
     pub tcgs: Vec<f64>,
     pub ncgs: Vec<f64>,
+    pub ncgsnth: Vec<f64>,
     pub bcgs: Vec<f64>,
     pub fcol: f64,
     pub p: Vec<f64>,
@@ -73,6 +74,7 @@ impl Emis {
             gmin: Vec::new(),
             tcgs: Vec::new(),
             ncgs: Vec::new(),
+            ncgsnth: Vec::new(),
             bcgs: Vec::new(),
             fcol: 1.8,
             p: Vec::new(),
@@ -124,8 +126,49 @@ impl Emis {
             etype::EBB | etype::EFBB | etype::EBBPOL => {
                 self.tcgs = vec![0.0; npts];
             }
+            etype::EPOLSYNCHPL | etype::ESYNCHPL => {
+                self.ncgsnth = vec![0.0; npts];
+                self.bcgs = vec![0.0; npts];
+                self.p = vec![0.0; npts];
+            }
+            etype::EPOLSYNCHTH | etype::ESYNCHTHAV => {
+                self.ncgs = vec![0.0; npts];
+                self.tcgs = vec![0.0; npts];
+                self.bcgs = vec![0.0; npts];
+            }
             _ => {}
         }
+    }
+
+    /// Upstream `assign_emis_params` for the synchrotron types.
+    pub fn assign_synch_params(
+        &mut self,
+        ncgs: &[f64],
+        ncgsnth: &[f64],
+        bcgs: &[f64],
+        tcgs: &[f64],
+    ) {
+        match self.type_ {
+            etype::EPOLSYNCHPL | etype::ESYNCHPL => {
+                self.ncgsnth = ncgsnth.to_vec();
+                self.bcgs = bcgs.to_vec();
+                self.tcgs = tcgs.to_vec();
+            }
+            etype::EPOLSYNCHTH | etype::ESYNCHTHAV => {
+                self.ncgs = ncgs.to_vec();
+                self.bcgs = bcgs.to_vec();
+                self.tcgs = tcgs.to_vec();
+            }
+            _ => {}
+        }
+    }
+
+    /// Upstream `emis_model_synchpl`: store p, gmin, gmax for the power-law
+    /// model.
+    pub fn set_synchpl_model(&mut self, p: f64, gmin: &[f64], gmax: f64) {
+        self.p = vec![p; self.npts];
+        self.gmin = gmin.to_vec();
+        self.gmax = gmax;
     }
 
     /// Upstream `assign_emis_params` for the ported types.
@@ -172,6 +215,34 @@ impl Emis {
                 // lambda(e): e%j=1, e%K=0
                 for i in 0..npts {
                     kb[i * 11] = 1.0;
+                }
+            }
+            etype::EPOLSYNCHPL => {
+                let out = polsynchpl(
+                    nu,
+                    &self.ncgsnth,
+                    &self.bcgs,
+                    &self.incang,
+                    &self.p,
+                    &self.gmin,
+                    self.gmax,
+                );
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
+            etype::ESYNCHPL => {
+                let out = synchpl(
+                    nu,
+                    &self.ncgsnth,
+                    &self.bcgs,
+                    &self.incang,
+                    &self.p,
+                    &self.gmin,
+                    self.gmax,
+                );
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
                 }
             }
             _ => {

@@ -145,6 +145,16 @@ pub fn bilin(v00: f64, v01: f64, v10: f64, v11: f64, xd: f64, yd: f64) -> f64 {
     w1 * (1.0 - xd) + w2 * xd
 }
 
+/// Single-precision bilinear interpolation (upstream `bilininterp` with
+/// default `real` arguments, selected by gfortran for FFJET's mixed-kind
+/// calls).
+#[inline]
+pub fn bilin_f32(v00: f32, v01: f32, v10: f32, v11: f32, xd: f32, yd: f32) -> f32 {
+    let w1 = v00 * (1.0 - yd) + v01 * yd;
+    let w2 = v10 * (1.0 - yd) + v11 * yd;
+    w1 * (1.0 - xd) + w2 * xd
+}
+
 /// Trilinear interpolation with upstream corner order
 /// `v000, v001, v010, v011, v100, v101, v110, v111`.
 #[inline]

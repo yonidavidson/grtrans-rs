@@ -94,7 +94,7 @@ fn geokerr_stats() {
     let names = [
         "t", "r", "theta", "phi", "k_t", "k_r", "k_th", "k_ph", "lambda",
     ];
-    for (camsec, geosec, nup, standard, mu0, spin, uout, half, nro, nphi) in configs {
+    for (_camsec, geosec, nup, standard, mu0, spin, uout, half, nro, nphi) in configs {
         let (_, rays) = &sections[geosec];
         let args = initialize_pixels(
             true, standard, mu0, -0.5, spin, uout, 1.0, 1.0, 2, -half, half, -half, half, nro,

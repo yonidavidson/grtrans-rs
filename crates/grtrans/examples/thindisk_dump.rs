@@ -34,10 +34,12 @@ fn main() {
         iname: "lsoda".to_string(),
         nvals,
         freqs,
+        ..Default::default()
     };
     let sp = SourceParams {
         mdot: 1.5e15,
         mbh: 10.0,
+        ..Default::default()
     };
     let npix = nx * ny;
     let mut ours = vec![0.0f64; npix * nvals * nfreq];

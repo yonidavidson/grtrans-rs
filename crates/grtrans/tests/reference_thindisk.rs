@@ -49,10 +49,12 @@ fn thindisk_matches_reference() {
         iname: "lsoda".to_string(),
         nvals,
         freqs,
+        ..Default::default()
     };
     let sp = SourceParams {
         mdot: 1.5e15,
         mbh: 10.0,
+        ..Default::default()
     };
 
     let npix = nx * ny;

@@ -8,6 +8,7 @@ pub mod emissivity;
 pub mod fluid;
 pub mod models;
 pub mod polsynch;
+pub mod polsynch_tables;
 
 pub use emissivity::{
     assign_emis_params, calc_emissivity, invariant_emis, rotate_emis, Emis, EmisParams,
