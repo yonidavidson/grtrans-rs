@@ -1,3 +1,6 @@
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::needless_range_loop)]
+#![allow(dead_code)]
 //! End-to-end reference test: THINDISK.
 //!
 //! Reproduces the upstream regression case (run_grtrans_test_problems_public.py)

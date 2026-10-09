@@ -167,7 +167,7 @@ pub fn geor(
     let mut i1mu = cached.i1mu;
     let mut i2mu = cached.i2mu;
     let mut i3mu = cached.i3mu;
-    let mut iu0 = cached.iu0;
+    let _iu0 = cached.iu0;
 
     if q2 == 0.0 {
         // Calculate imu in the special case q2=0: 0 or 1 mu turning points.
@@ -342,7 +342,7 @@ pub fn geor(
                 out.iu = imu;
                 return out;
             }
-            let m = -g / 2.0;
+            let _m = -g / 2.0;
             if firstpt {
                 out.iu0 =
                     su * elliptic::ellcubiccomplex(

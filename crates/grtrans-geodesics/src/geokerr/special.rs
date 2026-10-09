@@ -16,7 +16,7 @@ pub fn gauleg(x1: f64, x2: f64, n: usize) -> (Vec<f64>, Vec<f64>) {
     const PI: f64 = std::f64::consts::PI;
     const EPS: f64 = 3e-14;
 
-    let m = (n + 1) / 2;
+    let m = n.div_ceil(2);
     let xm = 0.5 * (x2 + x1);
     let xl = 0.5 * (x2 - x1);
     let mut x = vec![0.0f64; n];
@@ -158,7 +158,7 @@ pub fn laguer(a: &[Complex64], m: usize, x: Complex64, its: u32) -> Complex64 {
             b = x * b + a[j - 1];
             err = b.norm() + abx * err;
         }
-        err = EPSS * err;
+        err *= EPSS;
 
         if b.norm() <= err {
             // Special case: we are on the root.
@@ -189,7 +189,7 @@ pub fn laguer(a: &[Complex64], m: usize, x: Complex64, its: u32) -> Complex64 {
             if iter % MT != 0 {
                 x = x1;
             } else {
-                x = x - dx * FRAC[iter / MT - 1];
+                x -= dx * FRAC[iter / MT - 1];
             }
         }
     }
@@ -220,7 +220,7 @@ pub fn sncndn(uu: f64, emmc: f64) -> (f64, f64, f64) {
             d = 1.0 - emc;
             emc = -emc / d;
             d = d.sqrt();
-            u = d * u;
+            u *= d;
         }
         let mut a = 1.0f64;
         dn = 1.0f64;
@@ -235,19 +235,19 @@ pub fn sncndn(uu: f64, emmc: f64) -> (f64, f64, f64) {
             if (a - emc).abs() <= CA * a {
                 break;
             }
-            emc = a * emc;
+            emc *= a;
             a = c;
         }
-        u = c * u;
+        u *= c;
         let mut snv = u.sin();
         let mut cnv = u.cos();
         if snv != 0.0 {
             a = cnv / snv;
-            c = a * c;
+            c *= a;
             for ii in (1..=l).rev() {
                 let b = em[ii - 1];
-                a = c * a;
-                c = dn * c;
+                a *= c;
+                c *= dn;
                 dn = (en[ii - 1] + a) / (b + a);
                 a = c / b;
             }
@@ -260,10 +260,8 @@ pub fn sncndn(uu: f64, emmc: f64) -> (f64, f64, f64) {
             cnv = c * snv;
         }
         if bo {
-            let swap = dn;
-            dn = cnv;
-            cnv = swap;
-            snv = snv / d;
+            std::mem::swap(&mut dn, &mut cnv);
+            snv /= d;
         }
         sn = snv;
         cn = cnv;

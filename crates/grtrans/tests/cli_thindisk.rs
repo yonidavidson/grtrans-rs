@@ -1,3 +1,6 @@
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::needless_range_loop)]
+#![allow(dead_code)]
 //! End-to-end CLI test: run the `grtrans` binary on the THINDISK input deck
 //! (binary output) and compare with the upstream reference fixture.
 

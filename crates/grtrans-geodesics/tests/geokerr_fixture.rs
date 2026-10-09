@@ -1,3 +1,7 @@
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::type_complexity)]
+#![allow(dead_code)]
 //! Geokerr validation against Fortran fixtures.
 //!
 //! The fixture (reference/fixtures/fortran/test_geokerr.txt) is produced by

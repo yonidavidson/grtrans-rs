@@ -118,8 +118,8 @@ pub fn rd(x: f64, y: f64, z: f64) -> f64 {
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();
         let alamb = sqrtx * (sqrty + sqrtz) + sqrty * sqrtz;
-        sum = sum + fac / (sqrtz * (zt + alamb));
-        fac = 0.25 * fac;
+        sum += fac / (sqrtz * (zt + alamb));
+        fac *= 0.25;
         xt = 0.25 * (xt + alamb);
         yt = 0.25 * (yt + alamb);
         zt = 0.25 * (zt + alamb);
@@ -199,8 +199,8 @@ pub fn rj(x: f64, y: f64, z: f64, p: f64) -> f64 {
         let alpha = alpha_t * alpha_t;
         let beta_t = pt + alamb;
         let beta = pt * (beta_t * beta_t);
-        sum = sum + fac * rc(alpha, beta);
-        fac = 0.25 * fac;
+        sum += fac * rc(alpha, beta);
+        fac *= 0.25;
         xt = 0.25 * (xt + alamb);
         yt = 0.25 * (yt + alamb);
         zt = 0.25 * (zt + alamb);
@@ -646,7 +646,7 @@ pub fn elldoublecomplex(
     let two = 2.0f64;
     let three = 3.0f64;
     let four = 4.0f64;
-    let six = 6.0f64;
+    let _six = 6.0f64;
 
     // (2.1) Carlson (1992)
     let xi1 = (f1 + g1 * x + h1 * x * x).sqrt();
@@ -754,7 +754,8 @@ pub fn phifnkerr(u: f64, u1: f64, u2: f64, l: f64, a: f64) -> f64 {
     let _su1 = (-u1).sqrt(); // computed upstream, unused
     let sup = (1.0 - u1 / up).sqrt();
     let sumv = (1.0 - u1 * umi).sqrt();
-    let result = (l + two * a * u2 - two * l * u2) / (su21 * (u2 * umi - 1.0) * (u2 / up - 1.0))
+
+    (l + two * a * u2 - two * l * u2) / (su21 * (u2 * umi - 1.0) * (u2 / up - 1.0))
         * ((su21 + s) / (su21 - s)).ln()
         + (two * a + l * (-two + umi))
             * umi.sqrt()
@@ -765,8 +766,7 @@ pub fn phifnkerr(u: f64, u1: f64, u2: f64, l: f64, a: f64) -> f64 {
             * ((sup + (1.0 / up).sqrt() * s) / (sup - (1.0 / up).sqrt() * s)).ln()
             / (1.0 / up - umi)
             * sup
-            * (u2 / up - 1.0);
-    result
+            * (u2 / up - 1.0)
 }
 
 /// Time integrand contribution (upstream `tfnkerr`).
@@ -786,7 +786,8 @@ pub fn tfnkerr(u0: f64, uf: f64, u1: f64, u2: f64, l: f64, a: f64) -> f64 {
     let u2sq = u2 * u2;
     let u2cu = u2sq * u2;
     let umicu = umi * umi * umi;
-    let result = sf / (uf * u1 * u2)
+
+    sf / (uf * u1 * u2)
         - ss / (u0 * u1 * u2)
         - ((-u2 - two * u1 * (1.0 + u2 * umi + u2 / up))
             * (((sf + su1) * (su1 - ss)) / ((-sf + su1) * (ss + su1))).ln())
@@ -805,8 +806,7 @@ pub fn tfnkerr(u0: f64, uf: f64, u1: f64, u2: f64, l: f64, a: f64) -> f64 {
             * (((sup + sf * (1.0 / up).sqrt()) * (sup - ss * (1.0 / up).sqrt()))
                 / ((sup - sf * (1.0 / up).sqrt()) * (sup + ss * (1.0 / up).sqrt())))
             .ln())
-            / ((1.0 / up - umi) * sup * (u2 / up - 1.0));
-    result
+            / ((1.0 / up - umi) * sup * (u2 / up - 1.0))
 }
 
 /// Re-export for callers that need complex roots.

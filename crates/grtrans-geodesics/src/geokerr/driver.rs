@@ -60,7 +60,7 @@ pub fn geokerr(
     a: f64,
     l: f64,
     q2: f64,
-    alpha: f64,
+    _alpha: f64,
     beta: f64,
     tpm_in: i32,
     tpr_in: i32,
@@ -111,7 +111,7 @@ pub fn geokerr(
     if usegeor {
         // Solve for uf at equal steps between mu0 and muf by calling GEOR
         // assuming no mu turning points are present.
-        let mut k = 1usize;
+        let k = 1usize;
         let mun = mu0 + (k as f64 - offset) * (muf - mu0) / nup_in as f64;
         let mut lambda = 0.0f64;
         let mut tmu = 0.0f64;

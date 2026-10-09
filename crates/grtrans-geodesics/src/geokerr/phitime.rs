@@ -1488,7 +1488,7 @@ pub fn geophitime(
     // Eq. (49)
     let lambda = lambdau + tmu;
     if l == 0.0 {
-        phiu = phiu - fsgn1(a) * pi * f64::from(tpm);
+        phiu -= fsgn1(a) * pi * f64::from(tpm);
     }
     PhitimeOutput {
         phimu,

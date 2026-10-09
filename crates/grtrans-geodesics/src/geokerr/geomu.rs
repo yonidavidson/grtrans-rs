@@ -135,7 +135,7 @@ pub fn indep_muf(
     npts: i32,
     offset: f64,
 ) -> (f64, i32) {
-    let mut mun;
+    let mun;
     let mut tpmk;
     if muf <= muplus && muf >= muminus {
         let dtpm = tpmf - tpm0;
@@ -190,7 +190,7 @@ pub fn geomu(
     let two = 2.0f64;
     let third = 0.3333333333333333f64;
     let pi = PI;
-    let pi2 = two * pi;
+    let _pi2 = two * pi;
     let uplus = one / (one + (one - a * a).sqrt());
     let ql2 = q2 + l2;
 
@@ -223,7 +223,7 @@ pub fn geomu(
     let mut u0 = u0;
     let mut uf = uf_in;
     let mut muf = muf_in;
-    let mut iu;
+    let iu;
     let mut iu1 = 0.0f64;
     #[allow(unused_assignments)]
     let mut muminus = 0.0f64;
@@ -705,7 +705,7 @@ pub fn geomu(
         } else {
             // asymmetric roots case
             let s1 = if mu0 >= 0.0 { 1.0 } else { -1.0 };
-            muplus = s1 * muplus;
+            muplus *= s1;
             muminus = s1 * mneg.sqrt();
             if muminus.abs() > mu0.abs() {
                 muminus = mu0;

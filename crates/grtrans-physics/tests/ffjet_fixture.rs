@@ -1,3 +1,7 @@
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::type_complexity)]
+#![allow(dead_code)]
 //! FFJET fluid model validated against the Fortran fixture.
 use grtrans_core::four_vector::FourVector;
 use grtrans_physics::models::ffjet::{ffjet_vals, initialize_ffjet_model};

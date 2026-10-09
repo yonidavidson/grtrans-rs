@@ -1,3 +1,7 @@
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::type_complexity)]
+#![allow(dead_code)]
 //! Per-ray FFJET debug comparison (upstream `debug=1` geodebug output).
 //!
 //! Compares the full chain for pixel 6035 (1-based): fluid variables,

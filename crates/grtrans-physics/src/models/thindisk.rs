@@ -1,3 +1,7 @@
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::needless_range_loop)]
+#![allow(clippy::type_complexity)]
+#![allow(dead_code)]
 //! Standard NT73 thin disk model.
 //!
 //! Direct translation of `fluid_model_thindisk.f90` (upstream GRTRANS).
@@ -51,7 +55,7 @@ pub fn thindisk_vals(
     assert_eq!(th.len(), n);
     let mbh = state.mbh;
     let mdot = state.mdot;
-    let MSUN_f = MSUN as f32; // f32 rounding of the f64 constant, as upstream
+    let msun_f = MSUN as f32; // f32 rounding of the f64 constant, as upstream
                               // lbh = MBH*MSUN*G/C2: mixed-kind expression evaluated in f64 then
                               // stored in a default real
     let lbh: f32 = ((mbh as f64) * MSUN * G / C2) as f32;
@@ -59,7 +63,7 @@ pub fn thindisk_vals(
     state.rin = rms.max(state.rin);
     let rin = state.rin;
     let rout = state.rout;
-    let _ = MSUN_f;
+    let _ = msun_f;
 
     // kc = krolikc(r, a) (single precision)
     let mut t = vec![0.0f32; n];

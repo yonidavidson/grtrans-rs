@@ -193,45 +193,6 @@ pub fn quadlin(v: &[f64; 16], td: f64, xd: f64, yd: f64, zd: f64) -> f64 {
     w1 * (1.0 - td) + w2 * td
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn locate_ascending() {
-        let xx = [1.0, 2.0, 3.0, 4.0];
-        assert_eq!(locate(&xx, 1.0), 1);
-        assert_eq!(locate(&xx, 2.5), 2);
-        assert_eq!(locate(&xx, 4.0), 3);
-    }
-
-    #[test]
-    fn hunt_matches_locate() {
-        let xx: Vec<f64> = (0..100).map(|i| i as f64 * 0.5).collect();
-        let mut j = 1isize;
-        for i in 0..100 {
-            let x = i as f64 * 0.5 + 0.2;
-            j = hunt(&xx, x, j);
-            assert_eq!(j, locate(&xx, x));
-        }
-    }
-
-    #[test]
-    fn get_weight_interpolates() {
-        let xx = [0.0, 1.0, 2.0];
-        let (w, j) = get_weight(&xx, 0.25, 0);
-        assert_eq!(j, 1);
-        assert!((w - 0.25).abs() < 1e-15);
-    }
-
-    #[test]
-    fn bilinear_corner() {
-        assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 0.0, 0.0), 1.0);
-        assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 1.0, 1.0), 4.0);
-        assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 0.5, 0.0), 2.0);
-    }
-}
-
 /// Single-precision `hunt` (upstream `hunt` with default `real` arrays).
 pub fn hunt_f32(xx: &[f32], x: f32, jlo: isize) -> isize {
     let n = xx.len() as isize;
@@ -305,4 +266,43 @@ pub fn get_weight_f32(xx: &[f32], x: f32, jlo: isize) -> (f32, isize) {
     let hi = xx[j as usize];
     let weight = (x - lo) / (hi - lo);
     (weight, j)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn locate_ascending() {
+        let xx = [1.0, 2.0, 3.0, 4.0];
+        assert_eq!(locate(&xx, 1.0), 1);
+        assert_eq!(locate(&xx, 2.5), 2);
+        assert_eq!(locate(&xx, 4.0), 3);
+    }
+
+    #[test]
+    fn hunt_matches_locate() {
+        let xx: Vec<f64> = (0..100).map(|i| i as f64 * 0.5).collect();
+        let mut j = 1isize;
+        for i in 0..100 {
+            let x = i as f64 * 0.5 + 0.2;
+            j = hunt(&xx, x, j);
+            assert_eq!(j, locate(&xx, x));
+        }
+    }
+
+    #[test]
+    fn get_weight_interpolates() {
+        let xx = [0.0, 1.0, 2.0];
+        let (w, j) = get_weight(&xx, 0.25, 0);
+        assert_eq!(j, 1);
+        assert!((w - 0.25).abs() < 1e-15);
+    }
+
+    #[test]
+    fn bilinear_corner() {
+        assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 0.0, 0.0), 1.0);
+        assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 1.0, 1.0), 4.0);
+        assert_eq!(bilin(1.0, 2.0, 3.0, 4.0, 0.5, 0.0), 2.0);
+    }
 }

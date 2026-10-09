@@ -16,6 +16,19 @@
 #![allow(clippy::approx_constant)]
 #![allow(clippy::neg_cmp_op_on_partial_ord)]
 #![allow(clippy::too_many_arguments)]
+#![allow(clippy::needless_range_loop)] // index loops mirror Fortran 1-based indexing
+#![allow(clippy::chunks_exact_to_as_chunks)]
+#![allow(clippy::type_complexity)]
+#![allow(clippy::needless_update)]
+#![allow(clippy::manual_memcpy)]
+#![allow(clippy::manual_clamp)]
+#![allow(clippy::manual_div_ceil)]
+#![allow(clippy::manual_swap)]
+#![allow(clippy::let_and_return)]
+#![allow(clippy::items_after_test_module)]
+#![allow(clippy::excessive_precision)]
+#![allow(clippy::assign_op_pattern)]
+#![allow(unused_assignments)] // Fortran re-assignment patterns are preserved
 
 pub mod lsoda;
 
@@ -339,7 +352,7 @@ pub fn calc_o(
     let lam2 = (disc - (a2 - p2) / 2.0).sqrt();
     let theta = lam1 * lam1 + lam2 * lam2;
     let sig = if ap >= 0.0 { 1.0 } else { -1.0 };
-    let mut m1v = *identity;
+    let m1v = *identity;
     let mut m2v = [[0.0f64; 4]; 4];
     m2v[1][0] = lam2 * aq - sig * lam1 * rhoq;
     m2v[2][0] = lam2 * au - sig * lam1 * rhou;
@@ -448,7 +461,12 @@ pub fn radtrans_integrate_formal(
 }
 
 /// Upstream `radtrans_integrate_quadrature` (intensity only, I0 = 0).
-pub fn radtrans_integrate_quadrature(s: &[f64], j: &[f64], kcoef: &[f64], tau: &[f64]) -> Vec<f64> {
+pub fn radtrans_integrate_quadrature(
+    s: &[f64],
+    j: &[f64],
+    _kcoef: &[f64],
+    tau: &[f64],
+) -> Vec<f64> {
     let n = s.len();
     let integrand: Vec<f64> = (0..n).map(|i| j[i] * (-tau[i]).exp()).collect();
     // intensity(1,:) = -tsum(s, j*exp(-tau))
