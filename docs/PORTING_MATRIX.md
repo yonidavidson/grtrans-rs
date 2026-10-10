@@ -58,6 +58,7 @@ Documented upstream quirks reproduced or resolved:
 | `fluid.f90` dispatch/geometry | `physics::fluid` | done (ported models) | explicit state instead of module globals |
 | `THINDISK` | `physics::models::thindisk` | done | end-to-end 1.2e-7 vs reference |
 | `FFJET` | `physics::models::ffjet` | done | fluid fixture at f32 precision; end-to-end within the measured LSODA deviation |
+| `SPHACC` | `physics::models::sphacc` | done | stored profile tables embedded; end-to-end image 1.8e-2 / spectrum 7.0e-3 |
 | `PHATDISK`, `NUMDISK`, `HOTSPOT`, `SCHNITTMAN`, `SPHACC`, `POWERLAW`, `SARIAF`, `TOY` | — | pending | data files shipped for none except SPHACC's in-source table |
 | `HARM`, `HARM3D`, `HARMPI`, `IHARM`, `KORAL*`, `MB09`, `THICKDISK` | — | pending/blocked | readers are large; `HARM` has shipped data (`dump040`) and is the next target; the others require private simulation dumps (blocked without data) |
 
@@ -68,7 +69,7 @@ Documented upstream quirks reproduced or resolved:
 | `radtrans_integrate.f90` delo | `transfer::radtrans_integrate_delo` | done | exact scheme; agrees with the exact ODE solution to ~0.4% on FFJET |
 | `radtrans_integrate.f90` formal | `transfer::radtrans_integrate_formal` | done | `calc_O` matrix exponential |
 | quadrature | `transfer::radtrans_integrate_quadrature` | done | |
-| LSODA (`opkda*.f`, 28k lines) | `transfer::lsoda` | **substituted** | Dormand–Prince 5(4) with upstream tolerances and window; see VALIDATION_PLAN §3. Upstream LSODA deviates ~5% from the exact solution on FFJET (measured from upstream's own debug output); the substitute reproduces the exact solution. A faithful ODEPACK port remains an open item. |
+| LSODA (`opkda*.f`, 28k lines) | `transfer::lsoda` | **substituted** | Four-Stokes: Dormand–Prince 5(4) with upstream tolerances and window. Intensity-only (`nequations==1`): unconditionally stable exponential integrator with adaptive substepping (the scalar transfer equation is stiff; upstream LSODA switches to BDF). See VALIDATION_PLAN §3. A faithful ODEPACK port remains an open item. |
 | spherical Stokes (`lsodasph`) | — | blocked | experimental upstream ("in development") |
 
 ## Driver, IO, bindings

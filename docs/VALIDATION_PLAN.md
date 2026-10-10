@@ -28,6 +28,7 @@ outputs; Rust unit tests compare. Current results:
 | ZROOTS quartic | `test_zroots.txt` | ≤1e-13 rel |
 | GEOMU (quartic-complex pixel) | `test_geomu.txt` | ≤1e-13 rel (iu, muf, roots, rff, imu integrals) |
 | `polsynchpl` (12 points) | `test_polsynch.txt` | matches to all printed digits (17 s.f.) |
+| `polsynchth`, `synchemis` | `test_polsynch.txt` | ≤8.7e-10 relative-to-row-max |
 | `synchpl` | `test_polsynch.txt` | cols 1/5 (others uninitialized upstream) |
 | FFJET fluid (`ffjet_vals`) | `test_ffjet_fluid.txt` | ≤1.4e-5 (f32 model; worst u3) |
 
@@ -55,6 +56,7 @@ defect.
 | --- | --- | --- | --- |
 | THINDISK (100×100, 4 Stokes, 25 ν) | Σ|ΔI|/Σ|I| | 1e-2 | **1.2e-7** |
 | FFJET (`POLSYNCHPL`, 100×100, 4 Stokes) | Σ|ΔI|/Σ|I| | 1e-2 | **1.7e-2** (see §3) |
+| SPHACC (`SYNCHTHAV`, 10000 rays, 25 ν) | Σ|ΔI|/Σ|I| | 1e-1 | **1.8e-2** image, **7.0e-3** spectrum |
 | HARM (150×150, Stokes I) | Σ|ΔI|/Σ|I| | 1e-2 | pending (model not yet ported) |
 | SPHACC profile + spectrum | Σ|ΔI|/Σ|I| | 1e-1 | pending (model not yet ported) |
 | POWERLAW toroidal | Σ|ΔI|/Σ|I| | 2e-2 | pending (model not yet ported) |
@@ -94,6 +96,8 @@ translated F77. Until then, the `lsoda` method is a documented substitute.
 | MUFILL writes up to KEXT elements past output arrays | port guards the writes (never read upstream) |
 | `geodebug.out` header writes `fac` before it is computed | test does not rely on it |
 | `synchpl` leaves columns 2–4, 6–11 uninitialized | only columns 1/5 are compared |
+| `get_weight` reads out of bounds when x is outside the table | port clamps to the edge interval (deterministic; affects only the innermost SPHACC points) |
+| Fortran table literals with a leading decimal point (`.13733`) | extraction script handles them; the earlier naive parse (13733) was caught by the SPHACC end-to-end test and fixed |
 
 ## 5. Fixture regeneration and CI
 
