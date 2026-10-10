@@ -200,13 +200,19 @@ pub fn trace_ray(
                 } else {
                     let j1: Vec<f64> = (0..npts).map(|i| e.j[i]).collect();
                     let k1: Vec<f64> = (0..npts).map(|i| e.kcoef[i * e.nk]).collect();
-                    let intensity = grtrans_transfer::radtrans_integrate_quadrature(
+                    // upstream: lsoda solves the scalar ODE over the trimmed
+                    // window; delo/formal use the trapezoidal quadrature
+                    let (intensity, nptsout) = grtrans_transfer::integrate_scalar(
+                        r.method,
                         &ray.lambda,
                         &j1,
                         &k1,
                         &tau,
+                        opts.hmax,
+                        opts.oatol,
+                        opts.ortol,
                     );
-                    r.npts = npts;
+                    r.npts = nptsout;
                     for i in 0..npts {
                         r.i[i] = intensity[i] * fac * lbh;
                     }

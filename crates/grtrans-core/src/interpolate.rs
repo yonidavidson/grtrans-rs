@@ -255,13 +255,22 @@ pub fn hunt_f32(xx: &[f32], x: f32, jlo: isize) -> isize {
 }
 
 /// Single-precision `get_weight`.
+///
+/// Note: upstream `hunt` returns a bracket index of 0 for `x` below the
+/// first element and `n` for `x` above the last, in which case upstream
+/// `get_weight` reads out of bounds. The port clamps to the edge interval
+/// (deterministic extrapolation), which only differs for out-of-table
+/// inputs; this affects the innermost SPHACC points (documented in
+/// docs/VALIDATION_PLAN.md).
 pub fn get_weight_f32(xx: &[f32], x: f32, jlo: isize) -> (f32, isize) {
-    let j = hunt_f32(xx, x, jlo);
-    assert!(
-        j >= 1 && (j as usize) < xx.len(),
-        "get_weight_f32: bracket index {j} out of range for len {}",
-        xx.len()
-    );
+    let n = xx.len() as isize;
+    let mut j = hunt_f32(xx, x, jlo);
+    if j < 1 {
+        j = 1;
+    }
+    if j > n - 1 {
+        j = n - 1;
+    }
     let lo = xx[(j - 1) as usize];
     let hi = xx[j as usize];
     let weight = (x - lo) / (hi - lo);

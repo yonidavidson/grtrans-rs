@@ -264,13 +264,19 @@ impl Emis {
                 );
             }
         }
-        // split into j (first neq columns) and K (next nk columns)
+        // upstream polsynchemis_wrapper: for neq==4, j = K(:,1:4) and
+        // K = K(:,5:11); for neq==1, j = K(:,1) and K(:,1) = K(:,5)
         for i in 0..npts {
-            for q in 0..self.neq {
-                self.j[i * self.neq + q] = kb[i * 11 + q];
-            }
-            for q in 0..self.nk {
-                self.kcoef[i * self.nk + q] = kb[i * 11 + self.neq + q];
+            if self.neq == 4 {
+                for q in 0..4 {
+                    self.j[i * 4 + q] = kb[i * 11 + q];
+                }
+                for q in 0..self.nk {
+                    self.kcoef[i * self.nk + q] = kb[i * 11 + 4 + q];
+                }
+            } else {
+                self.j[i] = kb[i * 11];
+                self.kcoef[i] = kb[i * 11 + 4];
             }
         }
     }

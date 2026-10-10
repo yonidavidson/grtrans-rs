@@ -240,3 +240,179 @@ pub fn integrate_lsoda(
     }
     (intensity, nptsout)
 }
+
+/// Scalar (intensity-only) version of the adaptive transfer integration,
+/// matching upstream `radtrans_integrate_lsoda` with `nequations==1`
+/// (`lsoda_basic` on `radtrans_lsoda_calc_rhs_npol`).
+///
+/// `s` is the affine-parameter array (decreasing along the ray), `j` and `k`
+/// the emission and absorption coefficients after the driver scalings, and
+/// `tau` the positive optical depth. The integration window is trimmed to
+/// tau <= MAX_TAU and nonzero emission, as upstream.
+pub fn integrate_lsoda_scalar(
+    s: &[f64],
+    j: &[f64],
+    k: &[f64],
+    tau: &[f64],
+    atol: f64,
+    rtol: f64,
+    hmax: f64,
+) -> (Vec<f64>, usize) {
+    const MAX_TAU: f64 = 10.0;
+    let npts = s.len();
+    let mut intensity = vec![0.0f64; npts];
+    if npts == 1 {
+        intensity[0] = j[0];
+        return (intensity, 1);
+    }
+    // window trimming (upstream radtrans_integrate_lsoda)
+    let mut lamdex = npts;
+    if tau.iter().cloned().fold(f64::NEG_INFINITY, f64::max) > MAX_TAU {
+        let mut jl = 0isize;
+        let mut ju = npts as isize + 1;
+        while ju - jl > 1 {
+            let jm = (ju + jl) / 2;
+            if MAX_TAU >= tau[(jm - 1) as usize] {
+                jl = jm;
+            } else {
+                ju = jm;
+            }
+        }
+        lamdex = (jl + 1) as usize;
+    }
+    let mut i1 = 0usize;
+    if j[0] == 0.0 {
+        for ii in 1..npts {
+            if j[ii] != 0.0 {
+                i1 = ii;
+                break;
+            }
+        }
+    }
+    let mut i2 = lamdex - 1;
+    if j[lamdex - 1] == 0.0 {
+        for ii in 1..lamdex {
+            if j[lamdex - 1 - ii] != 0.0 {
+                i2 = lamdex - 1 - ii;
+                break;
+            }
+        }
+    }
+    let nptsout = i2 + 1;
+    let m = i2 - i1 + 1;
+    // reversed (increasing) arrays over the window
+    let ss: Vec<f64> = (0..m).map(|q| s[i2 - q]).collect();
+    let jj: Vec<f64> = (0..m).map(|q| j[i2 - q]).collect();
+    let kk: Vec<f64> = (0..m).map(|q| k[i2 - q]).collect();
+    if m == 1 {
+        intensity[i2] = jj[0];
+        return (intensity, nptsout);
+    }
+    // RHS with linear interpolation
+    let rhs = |lam: f64, y: f64| -> f64 {
+        let mut kk0 = 0usize;
+        if lam <= ss[0] {
+            kk0 = 0;
+        } else if lam >= ss[m - 1] {
+            kk0 = m - 2;
+        } else {
+            let mut lo = 0usize;
+            let mut hi = m - 1;
+            while hi - lo > 1 {
+                let mid = (lo + hi) / 2;
+                if lam >= ss[mid] {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            kk0 = lo;
+        }
+        let w = (lam - ss[kk0]) / (ss[kk0 + 1] - ss[kk0]);
+        let jv = (1.0 - w) * jj[kk0] + w * jj[kk0 + 1];
+        let kv = (1.0 - w) * kk[kk0] + w * kk[kk0 + 1];
+        jv - kv * y
+    };
+    // Exponential integrator with adaptive substepping.
+    //
+    // The scalar transfer equation is stiff whenever K*ds is large (optically
+    // thick rays; for SPHACC K*ds ~ 1e6), which an explicit method cannot
+    // handle (upstream LSODA switches to BDF). Here the ODE is linear with
+    // piecewise-linear coefficients, so on each substep we freeze j and K at
+    // the substep midpoint and use the exact solution
+    //   I <- j/K + (I - j/K) exp(-K h),
+    // which is unconditionally stable and second-order accurate. The substep
+    // count is chosen to keep the relative change of the coefficients below
+    // 1e-3, giving ~1e-6 relative accuracy per interval, matching LSODA's
+    // tolerances.
+    let mut yout = vec![0.0f64; m];
+    let mut y = 0.0f64;
+    yout[0] = y;
+    let interp = |lam: f64| -> (f64, f64) {
+        let mut kk0 = 0usize;
+        if lam <= ss[0] {
+            kk0 = 0;
+        } else if lam >= ss[m - 1] {
+            kk0 = m - 2;
+        } else {
+            let mut lo = 0usize;
+            let mut hi = m - 1;
+            while hi - lo > 1 {
+                let mid = (lo + hi) / 2;
+                if lam >= ss[mid] {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            kk0 = lo;
+        }
+        let w = (lam - ss[kk0]) / (ss[kk0 + 1] - ss[kk0]);
+        (
+            (1.0 - w) * jj[kk0] + w * jj[kk0 + 1],
+            (1.0 - w) * kk[kk0] + w * kk[kk0 + 1],
+        )
+    };
+    for seg in 0..m - 1 {
+        let sa = ss[seg];
+        let sb = ss[seg + 1];
+        let h = sb - sa;
+        if h <= 0.0 {
+            yout[seg + 1] = y;
+            continue;
+        }
+        let (ja, ka) = interp(sa);
+        let (jb, kb) = interp(sb);
+        let rel = |a: f64, b: f64| -> f64 {
+            let scale = a.abs().max(b.abs()).max(1e-300);
+            (a - b).abs() / scale
+        };
+        let var = rel(ka, kb).max(rel(ja, jb));
+        let nsub = ((var / 1e-3).ceil() as usize).clamp(1, 100_000);
+        let hs = h / nsub as f64;
+        for q in 0..nsub {
+            let sm = sa + (q as f64 + 0.5) * hs;
+            let (jm, km) = interp(sm);
+            if km.abs() < 1e-300 {
+                y += jm * hs;
+            } else {
+                // stable exponential-Euler update:
+                //   y <- j*phi(k h)*h + y*exp(-k h),  phi(x) = (1-e^-x)/x
+                // (the naive equilibrium form suffers catastrophic
+                // cancellation when k h is small)
+                let x = -km * hs;
+                let ex = x.exp();
+                let phi = x.exp_m1() / x;
+                y = jm * hs * phi + y * ex;
+            }
+        }
+        yout[seg + 1] = y;
+    }
+    // Map back following the upstream array-section semantics: the
+    // solution at s(i1 + k) (section order, i.e. reversed) is yout[k], so
+    // the observer value (largest s) lands at index i2, as upstream.
+    for k in 0..m {
+        intensity[i1 + k] = yout[k];
+    }
+    (intensity, nptsout)
+}

@@ -480,6 +480,28 @@ pub fn calc_opt_depth(s: &[f64], alpha_i: &[f64]) -> Vec<f64> {
     grtrans_core::math::tsum(s, &abs)
 }
 
+/// Driver-facing `integrate` dispatch for the intensity-only case
+/// (`nequations==1`): upstream `lsoda` solves the scalar ODE, while
+/// `delo`/`formal` use the trapezoidal quadrature.
+pub fn integrate_scalar(
+    method: Method,
+    s: &[f64],
+    j: &[f64],
+    k: &[f64],
+    tau: &[f64],
+    hmax: f64,
+    oatol: f64,
+    ortol: f64,
+) -> (Vec<f64>, usize) {
+    match method {
+        Method::Lsoda => lsoda::integrate_lsoda_scalar(s, j, k, tau, oatol, ortol, hmax),
+        _ => {
+            let n = s.len();
+            (radtrans_integrate_quadrature(s, j, k, tau), n)
+        }
+    }
+}
+
 /// Driver-facing `integrate` dispatch for the 4-Stokes case.
 #[allow(clippy::too_many_arguments)]
 pub fn integrate(

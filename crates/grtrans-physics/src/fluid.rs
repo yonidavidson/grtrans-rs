@@ -10,6 +10,7 @@
 //! (`get_fluid_vars`).
 
 use crate::models::ffjet::{self, FfjetData};
+use crate::models::sphacc;
 use crate::models::thindisk::{self, ThindiskState};
 use grtrans_core::four_vector::FourVector;
 use std::sync::Arc;
@@ -164,6 +165,7 @@ pub enum ModelState {
     None,
     Thindisk(ThindiskState),
     Ffjet(Arc<FfjetData>),
+    Sphacc,
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -233,6 +235,11 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
             f.bmag = vec![0.0; nup];
             f.p = vec![0.0; nup];
         }
+        "SPHACC" => {
+            f.model = model::SPHACC;
+            f.bmag = vec![0.0; nup];
+            f.p = vec![0.0; nup];
+        }
         _ => {
             f.model = model::DUMMY;
         }
@@ -258,6 +265,10 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
                 state: ModelState::Thindisk(state),
             }
         }
+        "SPHACC" => LoadedFluid {
+            name: fname.to_string(),
+            state: ModelState::Sphacc,
+        },
         "FFJET" => {
             let data = ffjet::initialize_ffjet_model(std::path::Path::new(&args.dfile));
             LoadedFluid {
@@ -293,6 +304,9 @@ pub fn get_fluid_vars(
             f.u = u;
             f.b = b;
         }
+        (ModelState::Sphacc, model::SPHACC) => {
+            sphacc::get_sphacc_fluidvars(x, f);
+        }
         _ => {
             for v in f.u.iter_mut() {
                 *v = FourVector::flat([0.0; 4]);
@@ -322,6 +336,13 @@ pub fn convert_fluid_vars(
             let ncgsnth: Vec<f64> = f.rho.iter().map(|v| *v as f64 * sp.nfac).collect();
             let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64 * sp.bfac).collect();
             (vec![0.0; n], ncgsnth, bcgs, vec![0.0; n])
+        }
+        model::SPHACC => {
+            // convert_fluidvars_sphacc: ncgs=rho, bcgs=bmag, tcgs=p
+            let ncgs: Vec<f64> = f.rho.iter().map(|v| *v as f64).collect();
+            let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64).collect();
+            let tcgs: Vec<f64> = f.p.iter().map(|v| *v as f64).collect();
+            (ncgs, vec![0.0; n], bcgs, tcgs)
         }
         _ => (vec![0.0; n], vec![0.0; n], vec![0.0; n], vec![0.0; n]),
     }
