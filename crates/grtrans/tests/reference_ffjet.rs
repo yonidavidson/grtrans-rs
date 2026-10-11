@@ -96,14 +96,11 @@ fn ffjet_matches_reference() {
     let den: f64 = reference.iter().map(|b| b.abs()).sum();
     let err = num / den;
     println!("FFJET relative error vs upstream reference: {err:e}");
-    // The upstream reference image was produced with ODEPACK LSODA. Direct
-    // measurement against upstream's own `debug=1` output for pixel 6035
-    // shows LSODA deviates by ~5.7% from the exact solution of its own ODE
-    // on this problem (j ~ 1e-9 with atol = 1e-8), which is why upstream's
-    // own delo-vs-lsoda regression criterion is 5%. The Rust port's `lsoda`
-    // method is an accurate adaptive solver (see docs/PORTING_MATRIX.md),
-    // so the image differs from the LSODA reference at exactly that level.
-    // The tolerance below reflects the measured LSODA deviation (1.7e-2
-    // total; worst Stokes 2.5e-2), not an error of the port.
-    assert!(err < 3e-2, "FFJET relative error {err:e} exceeds 3e-2");
+    // The upstream reference was produced with ODEPACK LSODA over the
+    // transfer ODE with upstream's `radtrans_aux` value interpolation (a
+    // one-index shift relative to the lambda bracket; see
+    // docs/VALIDATION_PLAN.md section 3). The Rust port reproduces that
+    // interpolation deliberately, and this image now agrees with the
+    // reference to ~4e-4, well inside the upstream 1e-2 criterion.
+    assert!(err < 1e-2, "FFJET relative error {err:e} exceeds 1e-2");
 }
