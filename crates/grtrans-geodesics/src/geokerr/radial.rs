@@ -215,7 +215,10 @@ pub fn geor(
             out.u1 = -two * qq.sqrt() * (theta / 3.0).cos() - cc / dd / 3.0;
             out.u2 = -two * qq.sqrt() * ((theta - two * pi) / 3.0).cos() - cc / dd / 3.0;
             out.u3 = -two * qq.sqrt() * ((theta + two * pi) / 3.0).cos() - cc / dd / 3.0;
+            let mut __guard = 0usize;
             loop {
+                __guard += 1;
+                if __guard > 1_000_000 { panic!("geor: retry loop exceeded 1M iterations (NaN inputs?)"); }
                 // label 80
                 if u0 <= out.u2 {
                     out.ncase = 1;
@@ -471,7 +474,10 @@ pub fn geor(
                 out.u2 = root[1].re;
                 out.u3 = root[2].re;
                 out.u4 = root[3].re;
+                let mut __guard = 0usize;
                 loop {
+                    __guard += 1;
+                    if __guard > 1_000_000 { panic!("geor: retry loop exceeded 1M iterations (NaN inputs?)"); }
                     // label 90
                     if out.u2 > uplus && out.u3 > uplus {
                         out.ncase = 5;

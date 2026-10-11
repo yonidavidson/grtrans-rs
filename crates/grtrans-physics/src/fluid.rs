@@ -10,6 +10,7 @@
 //! (`get_fluid_vars`).
 
 use crate::models::ffjet::{self, FfjetData};
+use crate::models::powerlaw::{self, PowerlawState};
 use crate::models::sphacc;
 use crate::models::thindisk::{self, ThindiskState};
 use grtrans_core::four_vector::FourVector;
@@ -166,6 +167,7 @@ pub enum ModelState {
     Thindisk(ThindiskState),
     Ffjet(Arc<FfjetData>),
     Sphacc,
+    Powerlaw(PowerlawState),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -240,6 +242,12 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
             f.bmag = vec![0.0; nup];
             f.p = vec![0.0; nup];
         }
+        "POWERLAW" => {
+            f.model = model::POWERLAW;
+            f.bmag = vec![0.0; nup];
+            f.p = vec![0.0; nup];
+            f.rho2 = vec![0.0; nup];
+        }
         _ => {
             f.model = model::DUMMY;
         }
@@ -269,6 +277,29 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
             name: fname.to_string(),
             state: ModelState::Sphacc,
         },
+        "POWERLAW" => {
+            let mut state = PowerlawState::default();
+            powerlaw::init_powerlaw(
+                &mut state,
+                args.nscl as f32,
+                args.tscl as f32,
+                args.nnthscl as f32,
+                args.nnthp as f32,
+                args.beta as f32,
+                args.np as f32,
+                args.tp as f32,
+                args.rin as f32,
+                args.rout as f32,
+                args.thin as f32,
+                args.thout as f32,
+                args.phiin as f32,
+                args.phiout as f32,
+            );
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Powerlaw(state),
+            }
+        }
         "FFJET" => {
             let data = ffjet::initialize_ffjet_model(std::path::Path::new(&args.dfile));
             LoadedFluid {
@@ -307,6 +338,9 @@ pub fn get_fluid_vars(
         (ModelState::Sphacc, model::SPHACC) => {
             sphacc::get_sphacc_fluidvars(x, f);
         }
+        (ModelState::Powerlaw(state), model::POWERLAW) => {
+            powerlaw::get_powerlaw_fluidvars(state, x, a as f32, f);
+        }
         _ => {
             for v in f.u.iter_mut() {
                 *v = FourVector::flat([0.0; 4]);
@@ -343,6 +377,17 @@ pub fn convert_fluid_vars(
             let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64).collect();
             let tcgs: Vec<f64> = f.p.iter().map(|v| *v as f64).collect();
             (ncgs, vec![0.0; n], bcgs, tcgs)
+        }
+        model::POWERLAW => {
+            // convert_fluidvars_powerlaw
+            let ncgs: Vec<f64> = f.rho.iter().map(|v| *v as f64).collect();
+            let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64).collect();
+            let ncgsnth: Vec<f64> = f.rho2.iter().map(|v| *v as f64).collect();
+            let rlow = 1.0 / sp.muval - 1.0;
+            let rhigh = sp.gminval * (1.0 / sp.muval - 1.0);
+            let trat = powerlaw::monika_e(&f.rho, &f.p, &f.bmag, rlow, rhigh);
+            let tcgs: Vec<f64> = (0..n).map(|i| f.p[i] as f64 / (1.0 + trat[i])).collect();
+            (ncgs, ncgsnth, bcgs, tcgs)
         }
         _ => (vec![0.0; n], vec![0.0; n], vec![0.0; n], vec![0.0; n]),
     }

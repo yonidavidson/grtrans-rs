@@ -39,12 +39,20 @@ fn rhs(ss: &[f64], jj: &[[f64; 4]], kk: &[[[f64; 4]; 4]], lam: f64, y: &[f64; 4]
         k = lo;
     }
     let w = (lam - ss[k]) / (ss[k + 1] - ss[k]);
+    // Upstream `radtrans_aux` interpolates the VALUES with a one-index
+    // shift: for a bracket [ss(k), ss(k+1)] in the reversed array it uses
+    // jj(indx) and jj(indx+1) with indx = npts-k, i.e. the pair
+    // (jj_rev[k-1], jj_rev[k]) here. Reproduced deliberately for fidelity
+    // (see docs/VALIDATION_PLAN.md); the unshifted form would solve the
+    // "correct" ODE and deviate from the upstream reference by a few
+    // percent in sharp-featured emission regions.
+    let (ka, kb) = if k == 0 { (0, 0) } else { (k, k - 1) };
     let mut jv = [0.0f64; 4];
     let mut km = [[0.0f64; 4]; 4];
     for i in 0..4 {
-        jv[i] = (1.0 - w) * jj[k][i] + w * jj[k + 1][i];
+        jv[i] = (1.0 - w) * jj[ka][i] + w * jj[kb][i];
         for q in 0..4 {
-            km[i][q] = (1.0 - w) * kk[k][i][q] + w * kk[k + 1][i][q];
+            km[i][q] = (1.0 - w) * kk[ka][i][q] + w * kk[kb][i][q];
         }
     }
     let mut d = [0.0f64; 4];
@@ -122,24 +130,29 @@ pub fn integrate_lsoda(
     }
     let nptsout = i2 + 1;
     // integration range (0-based, inclusive): i1..=i2; upstream s(i1:i2)
-    let m = i2 - i1 + 1;
-    // upstream reverses: ss(1:npts)=s0(npts:1:-1); s(i1:i2)=s(i2:i1:-1)
-    let ss: Vec<f64> = (0..m).map(|k| s[i2 - k]).collect();
-    let jj: Vec<[f64; 4]> = (0..m).map(|k| j[i2 - k]).collect();
+    let m0 = i2 - i1 + 1;
+    // Upstream reverses the FULL array and its `radtrans_aux` interpolates
+    // VALUES with a one-index shift that reaches one sample beyond the
+    // trimmed window (where the emissivity may be zero). Include that
+    // sample so the shifted interpolation can reproduce upstream exactly.
+    let ext = if i2 + 1 < npts { 1 } else { 0 };
+    let m = m0 + ext;
+    let ss: Vec<f64> = (0..m).map(|k| s[i2 + ext - k]).collect();
+    let jj: Vec<[f64; 4]> = (0..m).map(|k| j[i2 + ext - k]).collect();
     let karr: Vec<[[f64; 4]; 4]> = (0..m)
-        .map(|k| opacity_matrix(&a[i2 - k], &rho[i2 - k]))
+        .map(|k| opacity_matrix(&a[i2 + ext - k], &rho[i2 + ext - k]))
         .collect();
-    if m == 1 {
-        intensity[i2] = jj[0];
+    if m0 == 1 {
+        intensity[i2] = jj[ext];
         return (intensity, nptsout);
     }
     // output at the reversed points, then map back
     let mut yout = vec![[0.0f64; 4]; m];
     let mut y = [0.0f64; 4];
-    yout[0] = y;
-    let mut x = ss[0];
-    let mut h = (ss[1] - ss[0]).min(hmax);
-    let mut out_idx = 1usize;
+    yout[ext] = y;
+    let mut x = ss[ext];
+    let mut h = (ss[ext + 1] - ss[ext]).min(hmax);
+    let mut out_idx = ext + 1;
     let mut steps = 0usize;
     let max_steps = 10_000_000usize;
     // Dormand-Prince 5(4) coefficients
@@ -233,10 +246,10 @@ pub fn integrate_lsoda(
         }
     }
     // Map back following the upstream array-section semantics: the
-    // solution at s(i1 + k) (section order, i.e. reversed) is yout[k], so
-    // the observer value (largest s) lands at index i2, as upstream.
-    for k in 0..m {
-        intensity[i1 + k] = yout[k];
+    // solution at s(i1 + (k-ext)) (section order, i.e. reversed) is
+    // yout[k], so the observer value (largest s) lands at index i2.
+    for k in ext..m {
+        intensity[i1 + (k - ext)] = yout[k];
     }
     (intensity, nptsout)
 }
@@ -254,9 +267,9 @@ pub fn integrate_lsoda_scalar(
     j: &[f64],
     k: &[f64],
     tau: &[f64],
-    atol: f64,
-    rtol: f64,
-    hmax: f64,
+    _atol: f64,
+    _rtol: f64,
+    _hmax: f64,
 ) -> (Vec<f64>, usize) {
     const MAX_TAU: f64 = 10.0;
     let npts = s.len();
@@ -299,40 +312,18 @@ pub fn integrate_lsoda_scalar(
         }
     }
     let nptsout = i2 + 1;
-    let m = i2 - i1 + 1;
-    // reversed (increasing) arrays over the window
-    let ss: Vec<f64> = (0..m).map(|q| s[i2 - q]).collect();
-    let jj: Vec<f64> = (0..m).map(|q| j[i2 - q]).collect();
-    let kk: Vec<f64> = (0..m).map(|q| k[i2 - q]).collect();
-    if m == 1 {
-        intensity[i2] = jj[0];
+    let m0 = i2 - i1 + 1;
+    // extended reversed arrays (see the 4-vector integrator for the
+    // rationale of the one-sample extension)
+    let ext = if i2 + 1 < npts { 1 } else { 0 };
+    let m = m0 + ext;
+    let ss: Vec<f64> = (0..m).map(|q| s[i2 + ext - q]).collect();
+    let jj: Vec<f64> = (0..m).map(|q| j[i2 + ext - q]).collect();
+    let kk: Vec<f64> = (0..m).map(|q| k[i2 + ext - q]).collect();
+    if m0 == 1 {
+        intensity[i2] = jj[ext];
         return (intensity, nptsout);
     }
-    // RHS with linear interpolation
-    let rhs = |lam: f64, y: f64| -> f64 {
-        let mut kk0 = 0usize;
-        if lam <= ss[0] {
-            kk0 = 0;
-        } else if lam >= ss[m - 1] {
-            kk0 = m - 2;
-        } else {
-            let mut lo = 0usize;
-            let mut hi = m - 1;
-            while hi - lo > 1 {
-                let mid = (lo + hi) / 2;
-                if lam >= ss[mid] {
-                    lo = mid;
-                } else {
-                    hi = mid;
-                }
-            }
-            kk0 = lo;
-        }
-        let w = (lam - ss[kk0]) / (ss[kk0 + 1] - ss[kk0]);
-        let jv = (1.0 - w) * jj[kk0] + w * jj[kk0 + 1];
-        let kv = (1.0 - w) * kk[kk0] + w * kk[kk0 + 1];
-        jv - kv * y
-    };
     // Exponential integrator with adaptive substepping.
     //
     // The scalar transfer equation is stiff whenever K*ds is large (optically
@@ -347,7 +338,7 @@ pub fn integrate_lsoda_scalar(
     // tolerances.
     let mut yout = vec![0.0f64; m];
     let mut y = 0.0f64;
-    yout[0] = y;
+    yout[ext] = y;
     let interp = |lam: f64| -> (f64, f64) {
         let mut kk0 = 0usize;
         if lam <= ss[0] {
@@ -368,12 +359,15 @@ pub fn integrate_lsoda_scalar(
             kk0 = lo;
         }
         let w = (lam - ss[kk0]) / (ss[kk0 + 1] - ss[kk0]);
+        // shifted VALUE interpolation as upstream `radtrans_aux` (see the
+        // 4-vector RHS above for the rationale)
+        let (ka, kb) = if kk0 == 0 { (0, 0) } else { (kk0, kk0 - 1) };
         (
-            (1.0 - w) * jj[kk0] + w * jj[kk0 + 1],
-            (1.0 - w) * kk[kk0] + w * kk[kk0 + 1],
+            (1.0 - w) * jj[ka] + w * jj[kb],
+            (1.0 - w) * kk[ka] + w * kk[kb],
         )
     };
-    for seg in 0..m - 1 {
+    for seg in ext..m - 1 {
         let sa = ss[seg];
         let sb = ss[seg + 1];
         let h = sb - sa;
@@ -388,7 +382,10 @@ pub fn integrate_lsoda_scalar(
             (a - b).abs() / scale
         };
         let var = rel(ka, kb).max(rel(ja, jb));
-        let nsub = ((var / 1e-3).ceil() as usize).clamp(1, 100_000);
+        // bounded substepping: 2% coefficient variation per substep keeps
+        // the exponential-Euler truncation error ~(0.02)^2/24 ~ 2e-5
+        // relative per interval, and caps the cost for sharp profile cuts
+        let nsub = ((var / 0.02).ceil() as usize).clamp(1, 64);
         let hs = h / nsub as f64;
         for q in 0..nsub {
             let sm = sa + (q as f64 + 0.5) * hs;
@@ -409,10 +406,10 @@ pub fn integrate_lsoda_scalar(
         yout[seg + 1] = y;
     }
     // Map back following the upstream array-section semantics: the
-    // solution at s(i1 + k) (section order, i.e. reversed) is yout[k], so
-    // the observer value (largest s) lands at index i2, as upstream.
-    for k in 0..m {
-        intensity[i1 + k] = yout[k];
+    // solution at s(i1 + (k-ext)) (section order, i.e. reversed) is
+    // yout[k], so the observer value (largest s) lands at index i2.
+    for k in ext..m {
+        intensity[i1 + (k - ext)] = yout[k];
     }
     (intensity, nptsout)
 }

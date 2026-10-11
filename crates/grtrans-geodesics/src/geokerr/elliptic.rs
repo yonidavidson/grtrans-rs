@@ -25,7 +25,10 @@ pub fn rf(x: f64, y: f64, z: f64) -> f64 {
     let mut delx = 0.0f64;
     let mut dely = 0.0f64;
     let mut delz = 0.0f64;
+    let mut __guard = 0usize;
     loop {
+            __guard += 1;
+            if __guard > 100_000 { panic!("rf: convergence loop exceeded 100k iterations"); }
         let sqrtx = xt.sqrt();
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();
@@ -43,7 +46,9 @@ pub fn rf(x: f64, y: f64, z: f64) -> f64 {
             dely = (ave - yt) / ave;
             delz = (ave - zt) / ave;
         }
-        if delx.abs().max(dely.abs()).max(delz.abs()) <= ERRTOL {
+        // Fortran `if (max.gt.errtol) goto 1` exits the loop when the
+        // condition is false, including for NaN; mirror that exactly.
+        if !(delx.abs().max(dely.abs()).max(delz.abs()) > ERRTOL) {
             break;
         }
     }
@@ -78,13 +83,17 @@ pub fn rc(x: f64, y: f64) -> f64 {
     }
     let mut ave;
     let mut s;
+    let mut __guard = 0usize;
     loop {
+            __guard += 1;
+            if __guard > 100_000 { panic!("Carlson integral: convergence loop exceeded 100k iterations"); }
         let alamb = 2.0 * xt.sqrt() * yt.sqrt() + yt;
         xt = 0.25 * (xt + alamb);
         yt = 0.25 * (yt + alamb);
         ave = THIRD * (xt + yt + yt);
         s = (yt - ave) / ave;
-        if s.abs() <= ERRTOL {
+        // Fortran `if (abs(s).gt.errtol) goto 1` semantics (NaN exits)
+        if !(s.abs() > ERRTOL) {
             break;
         }
     }
@@ -113,7 +122,10 @@ pub fn rd(x: f64, y: f64, z: f64) -> f64 {
     let mut delx = 0.0f64;
     let mut dely = 0.0f64;
     let mut delz = 0.0f64;
+    let mut __guard = 0usize;
     loop {
+            __guard += 1;
+            if __guard > 100_000 { panic!("Carlson integral: convergence loop exceeded 100k iterations"); }
         let sqrtx = xt.sqrt();
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();
@@ -127,7 +139,9 @@ pub fn rd(x: f64, y: f64, z: f64) -> f64 {
         delx = (ave - xt) / ave;
         dely = (ave - yt) / ave;
         delz = (ave - zt) / ave;
-        if delx.abs().max(dely.abs()).max(delz.abs()) <= ERRTOL {
+        // Fortran `if (max.gt.errtol) goto 1` exits the loop when the
+        // condition is false, including for NaN; mirror that exactly.
+        if !(delx.abs().max(dely.abs()).max(delz.abs()) > ERRTOL) {
             break;
         }
     }
@@ -190,7 +204,10 @@ pub fn rj(x: f64, y: f64, z: f64, p: f64) -> f64 {
     let mut dely = 0.0f64;
     let mut delz = 0.0f64;
     let mut delp = 0.0f64;
+    let mut __guard = 0usize;
     loop {
+            __guard += 1;
+            if __guard > 100_000 { panic!("Carlson integral: convergence loop exceeded 100k iterations"); }
         let sqrtx = xt.sqrt();
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();
@@ -210,7 +227,8 @@ pub fn rj(x: f64, y: f64, z: f64, p: f64) -> f64 {
         dely = (ave - yt) / ave;
         delz = (ave - zt) / ave;
         delp = (ave - pt) / ave;
-        if delx.abs().max(dely.abs()).max(delz.abs()).max(delp.abs()) <= ERRTOL {
+        // Fortran `if (max.gt.errtol) goto 1` semantics (NaN exits)
+        if !(delx.abs().max(dely.abs()).max(delz.abs()).max(delp.abs()) > ERRTOL) {
             break;
         }
     }

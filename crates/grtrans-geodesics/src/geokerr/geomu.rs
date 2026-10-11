@@ -251,7 +251,10 @@ pub fn geomu(
             out.u3 = -two * qq.sqrt() * ((theta + two * pi) / 3.0).cos() - cc / dd / 3.0;
             let mut u0_work = u0;
             let mut uf_work = uf;
+            let mut __guard = 0usize;
             loop {
+                __guard += 1;
+                if __guard > 1_000_000 { panic!("geomu: retry loop exceeded 1M iterations (NaN inputs?)"); }
                 // label 80 (retried when uf lands in the forbidden region)
                 u0_work = u0;
                 uf_work = uf;
@@ -447,7 +450,10 @@ pub fn geomu(
                 out.u2 = root[1].re;
                 out.u3 = root[2].re;
                 out.u4 = root[3].re;
+                let mut __guard = 0usize;
                 loop {
+                    __guard += 1;
+                    if __guard > 1_000_000 { panic!("geomu: retry loop exceeded 1M iterations (NaN inputs?)"); }
                     // label 90
                     if out.u2 > uplus && out.u3 > uplus {
                         out.ncase = 5;

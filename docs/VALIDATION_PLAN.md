@@ -55,37 +55,65 @@ defect.
 | Case | Metric | Upstream tolerance | Rust result |
 | --- | --- | --- | --- |
 | THINDISK (100×100, 4 Stokes, 25 ν) | Σ|ΔI|/Σ|I| | 1e-2 | **1.2e-7** |
-| FFJET (`POLSYNCHPL`, 100×100, 4 Stokes) | Σ|ΔI|/Σ|I| | 1e-2 | **1.7e-2** (see §3) |
-| SPHACC (`SYNCHTHAV`, 10000 rays, 25 ν) | Σ|ΔI|/Σ|I| | 1e-1 | **1.8e-2** image, **7.0e-3** spectrum |
+| FFJET (`POLSYNCHPL`, 100×100, 4 Stokes) | Σ|ΔI|/Σ|I| | 1e-2 | **4.2e-4** |
+| SPHACC (`SYNCHTHAV`, 10000 rays, 25 ν) | Σ|ΔI|/Σ|I| | 1e-1 | **6.3e-4** image, **5.2e-4** spectrum |
+| POWERLAW (`POLSYNCHTH`, 200×200, 4 Stokes) | Σ|ΔI|/Σ|I| | 2e-2 | **7.4e-4** |
 | HARM (150×150, Stokes I) | Σ|ΔI|/Σ|I| | 1e-2 | pending (model not yet ported) |
 | SPHACC profile + spectrum | Σ|ΔI|/Σ|I| | 1e-1 | pending (model not yet ported) |
 | POWERLAW toroidal | Σ|ΔI|/Σ|I| | 2e-2 | pending (model not yet ported) |
 
-## 3. The LSODA deviation (measured, not assumed)
+## 3. Transfer integration: the `radtrans_aux` interpolation quirk
 
 Upstream integrates the transfer equation with ODEPACK LSODA (rtol=1e-6,
 atol=1e-8, hmax=0.1, integration window trimmed at τ=10). The Rust port
-substitutes a Dormand–Prince 5(4) adaptive solver with the same tolerances
-and window.
+substitutes an adaptive solver (see below) and, importantly, reproduces an
+upstream interpolation quirk that is the dominant source of apparent
+"integrator deviations".
 
-Measurement (see `tests/ffjet_ray_debug.rs`): for FFJET pixel 6035, taking
-**upstream's own `debug=1` emissivity/opacity arrays** and integrating them
+**The quirk.** `radtrans_aux` (radtrans_integrate.f90) reverses the affine
+parameter array (`ss(1:npts)=s0(npts:1:-1)`) and locates the bracket
+`[ss(lindx), ss(lindx+1)]` for the current λ, but then interpolates the
+coefficients from `jj(indx)` and `jj(min(indx+1, npts))` with
+`indx = npts-lindx+1`. In terms of the original (decreasing) array this
+evaluates the values at the pair `(indx, indx+1)` over the λ bracket
+`[s0(indx), s0(indx-1)]` — i.e. the values are taken from one sample deeper
+than the λ bracket. At the edges of an emission region, where j jumps to
+zero, the shifted interpolation therefore reaches the zero sample and
+reduces the edge contribution.
 
-- exactly (dense RK reconstruction of upstream's arrays): I_0 = 1.7609e-3,
-- with the Rust `delo` scheme: I_0 = 1.7613e-3,
-- with the Rust adaptive solver: I_0 = 1.7592e-3,
-- **upstream LSODA output: I_0 = 1.8610e-3** (5.7% above the exact solution
-  of its own ODE).
+**Measurement (POWERLAW pixel 10043, 1-based; see
+`reference/fixtures/fortran`-style debug output).** Taking *upstream's own*
+`debug=1` j/K arrays and integrating exactly:
 
-Upstream's own regression test therefore allows 5% between `delo`/`formal`
-and `lsoda` on this problem. The FFJET image comparison against the
-LSODA-generated reference consequently agrees to 1.7e-2 (worst Stokes 2.5e-2),
-i.e. exactly the measured LSODA deviation. The port's solvers reproduce the
-exact solution more accurately than the reference run.
+| interpolation | I (normalized) |
+| --- | --- |
+| unshifted (natural) | 3.5007e-4 |
+| shifted (upstream `radtrans_aux`) | 3.3520e-4 |
+| **upstream LSODA output** | **3.3507e-4** |
+
+The shifted result matches upstream's LSODA to 0.04%: the upstream solver is
+accurate, but solves the ODE with shifted coefficients. The port reproduces
+the shift deliberately (`transfer::lsoda`, with a comment); before doing so,
+the four regression images differed from the reference by 1.7e-2 (FFJET),
+1.8e-2 (SPHACC) and 5.1e-2 (POWERLAW). After reproducing the shift they
+agree to ≤8e-4 (see the table above).
+
+**Solver substitution.** LSODA itself (opkda*.f, ~28k lines) is not ported.
+The substitute is:
+
+* four-Stokes: Dormand–Prince 5(4) with upstream tolerances and window;
+* intensity-only (`nequations==1`): an unconditionally stable exponential
+  integrator with bounded adaptive substepping (the scalar transfer
+  equation is stiff for optically thick sources, e.g. SPHACC where
+  K·Δs ~ 1e6, so an explicit method is not usable there).
+
+Both integrate the same ODE (with the shifted interpolation) to well below
+the reference tolerances; the end-to-end results above bound any residual
+solver difference.
 
 Open item (tracked in `docs/PORTING_MATRIX.md`): a faithful ODEPACK LSODA
-port would reproduce the reference bit-for-bit at the cost of ~28k lines of
-translated F77. Until then, the `lsoda` method is a documented substitute.
+port would make the agreement bit-exact; it is not required for the
+validated tolerances.
 
 ## 4. Upstream nondeterminism resolved deterministically
 
@@ -96,6 +124,7 @@ translated F77. Until then, the `lsoda` method is a documented substitute.
 | MUFILL writes up to KEXT elements past output arrays | port guards the writes (never read upstream) |
 | `geodebug.out` header writes `fac` before it is computed | test does not rely on it |
 | `synchpl` leaves columns 2–4, 6–11 uninitialized | only columns 1/5 are compared |
+| `radtrans_aux` interpolates values one sample deeper than the λ bracket | reproduced deliberately (see §3); the dominant source of apparent integrator deviations |
 | `get_weight` reads out of bounds when x is outside the table | port clamps to the edge interval (deterministic; affects only the innermost SPHACC points) |
 | Fortran table literals with a leading decimal point (`.13733`) | extraction script handles them; the earlier naive parse (13733) was caught by the SPHACC end-to-end test and fixed |
 

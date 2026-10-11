@@ -13,3 +13,6 @@ grtrans-physics.workspace = true
 grtrans-transfer.workspace = true
 grtrans-io.workspace = true
 rayon.workspace = true
+
+[dev-dependencies]
+rayon.workspace = true
