@@ -198,6 +198,36 @@ pub fn lnrf_frame_inv(vr: f64, vt: f64, omega: f64, r: f64, a: f64, th: f64) -> 
     (vrl, vtl, vpl)
 }
 
+/// Forward LNRF transform in single precision (upstream
+/// `lnrf_frame_real`): BL velocity components -> LNRF components.
+pub fn lnrf_frame_f32(
+    vr: f32,
+    vt: f32,
+    omega: f32,
+    r: f32,
+    a: f32,
+    th: f32,
+) -> (f32, f32, f32) {
+    let mu = th.cos();
+    let d = r * r - 2.0 * r + a * a;
+    let ar = (r * r + a * a).powi(2) - a * a * d * (1.0 - mu * mu);
+    let rho = r * r + a * a * mu * mu;
+    let enu = (d * rho / ar).sqrt();
+    let emu1 = (rho / d).sqrt();
+    let emu2 = rho.sqrt();
+    let epsi = (1.0 - mu * mu).sqrt() * (ar / rho).sqrt();
+    let om = 2.0 * a * r / ar;
+    let mut vrl = emu1 / enu * vr;
+    let mut vtl = emu2 / enu * vt;
+    let mut vpl = epsi / enu * (omega - om);
+    if !(d > 0.0) {
+        vrl = 0.0;
+        vtl = 0.0;
+        vpl = 0.0;
+    }
+    (vrl, vtl, vpl)
+}
+
 /// Inverse LNRF transform in single precision (upstream
 /// `lnrf_frame_inv_real`; selected by gfortran for FFJET's mixed-kind call).
 pub fn lnrf_frame_inv_f32(

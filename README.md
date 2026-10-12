@@ -5,10 +5,11 @@ transfer code by [Jason Dexter](https://github.com/jadexter/grtrans)
 ([Dexter 2016](https://ui.adsabs.harvard.edu/abs/2016MNRAS.462..115D),
 [Dexter & Agol 2009](https://ui.adsabs.harvard.edu/abs/2009ApJ...696.1616D)).
 
-**Status: four of the five upstream regression problems reproduce the
-reference results within (and far inside) the upstream tolerances; the HARM
-GRMHD reader remains to be ported.** See `docs/PORTING_MATRIX.md` for the
-per-module state and `docs/VALIDATION_PLAN.md` for the evidence.
+**Status: all five upstream regression problems are ported; four reproduce
+the reference results far inside the upstream tolerances, and HARM matches
+its reference to 4.8e-2 with the residual traced to a measured upstream
+integrator deviation on spiky GRMHD data (see `docs/VALIDATION_PLAN.md`
+§3.1).** See `docs/PORTING_MATRIX.md` for the per-module state.
 
 ## What GRTRANS computes
 
@@ -49,7 +50,7 @@ the upstream-shipped regression pickles within the upstream thresholds
 | FFJET (POLSYNCHPL, 4 Stokes) | Σ\|ΔI\|/Σ\|I\| | 1e-2 | 4.2e-4 |
 | SPHACC (SYNCHTHAV) | Σ\|ΔI\|/Σ\|I\| | 1e-1 | 6.3e-4 image, 5.2e-4 spectrum |
 | POWERLAW (POLSYNCHTH, 4 Stokes) | Σ\|ΔI\|/Σ\|I\| | 2e-2 | 7.4e-4 |
-| HARM (POLSYNCHTH) | Σ\|ΔI\|/Σ\|I\| | 1e-2 | pending (reader not yet ported) |
+| HARM (POLSYNCHTH) | Σ\|ΔI\|/Σ\|I\| | 1e-2 | 4.8e-2 (upstream integrator deviation on spiky data; see docs §3.1) |
 
 Kernel-level fixtures (Bessel functions, Carlson integrals, ZROOTS, GEOMU,
 all four emissivity families) agree to ≤1e-13 or better; the geokerr

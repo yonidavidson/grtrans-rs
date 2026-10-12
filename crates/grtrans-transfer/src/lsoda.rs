@@ -413,3 +413,105 @@ pub fn integrate_lsoda_scalar(
     }
     (intensity, nptsout)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Diagnostic: compare the interpolated coefficients and the integral
+    /// against an independent Python RK4 on the same arrays
+    /// (/tmp/harm_arrays.f64.bin, written by the harm_pixel example).
+    #[test]
+    fn diagnostic_harm_arrays() {
+        let path = "/tmp/harm_arrays.f64.bin";
+        let Ok(bytes) = std::fs::read(path) else {
+            return;
+        };
+        let vals: Vec<f64> = bytes
+            .chunks_exact(8)
+            .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+            .collect();
+        let n = vals.len() / 12;
+        let mut j = vec![[0.0f64; 4]; n];
+        let mut a = vec![[0.0f64; 4]; n];
+        let mut rho = vec![[0.0f64; 3]; n];
+        let mut s = vec![0.0f64; n];
+        for i in 0..n {
+            for c in 0..4 {
+                j[i][c] = vals[i * 12 + c];
+            }
+            for c in 0..7 {
+                let v = vals[i * 12 + 4 + c];
+                if c < 4 {
+                    a[i][c] = v;
+                } else {
+                    rho[i][c - 4] = v;
+                }
+            }
+            s[i] = vals[i * 12 + 11];
+        }
+        let tau: Vec<f64> = crate::calc_opt_depth(&s, &a.iter().map(|x| x[0]).collect::<Vec<_>>())
+            .iter()
+            .map(|v| -v)
+            .collect();
+        let (inten, nptsout) = integrate_lsoda(&s, &j, &a, &rho, &tau, 1e-14, 1e-12, 0.001);
+        println!("rust converged: I(final)={:e} nptsout={nptsout}", inten[nptsout - 1][0]);
+        // print the interpolated j1/K1 at a few lambda values using the same
+        // reversed-array logic as the integrator
+        let ss: Vec<f64> = s.iter().rev().cloned().collect();
+        let jj: Vec<[f64; 4]> = j.iter().rev().cloned().collect();
+        let karr: Vec<[[f64; 4]; 4]> = (0..n)
+            .map(|k| opacity_matrix(&a[n - 1 - k], &rho[n - 1 - k]))
+            .collect();
+        for lam in [ss[194], ss[200], (ss[194] + ss[195]) / 2.0] {
+            let d = rhs(&ss, &jj, &karr, lam, &[0.0; 4]);
+            println!("lam={lam:e} rhs_j1={:e} (at y=0)", d[0]);
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests_upstream {
+    use crate::{opacity_matrix, radtrans_integrate_delo};
+
+    #[test]
+    fn diagnostic_upstream_arrays() {
+        let path = "/tmp/harm_upstream_arrays.f64.bin";
+        let Ok(bytes) = std::fs::read(path) else {
+            return;
+        };
+        let vals: Vec<f64> = bytes
+            .chunks_exact(8)
+            .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+            .collect();
+        let n = vals.len() / 12;
+        let mut j = vec![[0.0f64; 4]; n];
+        let mut a = vec![[0.0f64; 4]; n];
+        let mut rho = vec![[0.0f64; 3]; n];
+        let mut s = vec![0.0f64; n];
+        for i in 0..n {
+            for c in 0..4 {
+                j[i][c] = vals[i * 12 + c];
+            }
+            for c in 0..7 {
+                let v = vals[i * 12 + 4 + c];
+                if c < 4 {
+                    a[i][c] = v;
+                } else {
+                    rho[i][c - 4] = v;
+                }
+            }
+            s[i] = vals[i * 12 + 11];
+        }
+        let tau: Vec<f64> = crate::calc_opt_depth(&s, &a.iter().map(|x| x[0]).collect::<Vec<_>>())
+            .iter()
+            .map(|v| -v)
+            .collect();
+        let (inten, nptsout) =
+            super::integrate_lsoda(&s, &j, &a, &rho, &tau, 1e-14, 1e-12, 0.001);
+        println!("upstream arrays: my lsoda I(final)={:e}", inten[nptsout - 1][0]);
+        let delo = radtrans_integrate_delo(&s, &tau, &j, &a, &rho, 1e-2);
+        println!("upstream arrays: my delo  I(final)={:e}", delo[n - 1][0]);
+        let _ = opacity_matrix(&a[0], &rho[0]);
+    }
+}

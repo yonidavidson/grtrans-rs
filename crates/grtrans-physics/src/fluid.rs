@@ -10,6 +10,7 @@
 //! (`get_fluid_vars`).
 
 use crate::models::ffjet::{self, FfjetData};
+use crate::models::harm::{self, HarmData};
 use crate::models::powerlaw::{self, PowerlawState};
 use crate::models::sphacc;
 use crate::models::thindisk::{self, ThindiskState};
@@ -168,6 +169,7 @@ pub enum ModelState {
     Ffjet(Arc<FfjetData>),
     Sphacc,
     Powerlaw(PowerlawState),
+    Harm(Arc<HarmData>),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -248,6 +250,11 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
             f.p = vec![0.0; nup];
             f.rho2 = vec![0.0; nup];
         }
+        "HARM" => {
+            f.model = model::HARM;
+            f.bmag = vec![0.0; nup];
+            f.p = vec![0.0; nup];
+        }
         _ => {
             f.model = model::DUMMY;
         }
@@ -277,6 +284,15 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
             name: fname.to_string(),
             state: ModelState::Sphacc,
         },
+        "HARM" => {
+            // upstream reads dfile + a 3-digit snapshot index (indf)
+            let path = format!("{}{:03}", args.dfile, args.indf);
+            let data = harm::initialize_harm_model(std::path::Path::new(&path));
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Harm(Arc::new(data)),
+            }
+        }
         "POWERLAW" => {
             let mut state = PowerlawState::default();
             powerlaw::init_powerlaw(
@@ -341,6 +357,9 @@ pub fn get_fluid_vars(
         (ModelState::Powerlaw(state), model::POWERLAW) => {
             powerlaw::get_powerlaw_fluidvars(state, x, a as f32, f);
         }
+        (ModelState::Harm(data), model::HARM) => {
+            harm::get_harm_fluidvars(data, x, a as f32, f);
+        }
         _ => {
             for v in f.u.iter_mut() {
                 *v = FourVector::flat([0.0; 4]);
@@ -377,6 +396,21 @@ pub fn convert_fluid_vars(
             let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64).collect();
             let tcgs: Vec<f64> = f.p.iter().map(|v| *v as f64).collect();
             (ncgs, vec![0.0; n], bcgs, tcgs)
+        }
+        model::HARM => {
+            // convert_fluidvars_harm: scale_sim_units + monika_e with
+            // rlow=muval, rhigh=muval/gminval; T_e = T_p * trat
+            let (ncgs, bcgs, tempcgs) = harm::scale_sim_units(
+                sp.mbh,
+                sp.mdot,
+                0.003,
+                &f.rho,
+                &f.p,
+                &f.bmag,
+            );
+            let trat = powerlaw::monika_e(&f.rho, &f.p, &f.bmag, sp.muval, sp.muval / sp.gminval);
+            let tcgs: Vec<f64> = (0..n).map(|i| tempcgs[i] * trat[i]).collect();
+            (ncgs.clone(), ncgs, bcgs, tcgs)
         }
         model::POWERLAW => {
             // convert_fluidvars_powerlaw

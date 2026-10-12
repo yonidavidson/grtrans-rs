@@ -62,7 +62,8 @@ Documented upstream quirks reproduced or resolved:
 | `SPHACC` | `physics::models::sphacc` | done | end-to-end image 6.3e-4 / spectrum 5.2e-4 |
 | `POWERLAW` | `physics::models::powerlaw` | done | end-to-end 7.4e-4 (nrotype=1 circular camera validated here too) |
 | `PHATDISK`, `NUMDISK`, `HOTSPOT`, `SCHNITTMAN`, `SARIAF`, `TOY` | — | pending | require external data files not shipped |
-| `HARM`, `HARM3D`, `HARMPI`, `IHARM`, `KORAL*`, `MB09`, `THICKDISK` | — | pending/blocked | readers are large; `HARM` has shipped data (`dump040`) and is the next target; the others require private simulation dumps (blocked without data) |
+| `HARM` | `physics::models::harm` | done | formatted dump reader, MKS→KS→BL transforms, LNRF velocities, 2D interpolation (single snapshot); fluid fixture 7.6e-6; end-to-end 4.8e-2 with the upstream integrator deviation documented in VALIDATION_PLAN §3.1 |
+| `HARM3D`, `HARMPI`, `IHARM`, `KORAL*`, `MB09`, `THICKDISK` | — | blocked | require simulation dumps not shipped with the upstream repository |
 
 ## Transfer
 

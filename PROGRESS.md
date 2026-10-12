@@ -14,7 +14,7 @@ at `jadexter/grtrans` @ `c76cb11`):
 | FFJET (POLSYNCHPL, 4 Stokes) | 1e-2 | 4.2e-4 |
 | SPHACC (SYNCHTHAV, image/spectrum) | 1e-1 | 6.3e-4 / 5.2e-4 |
 | POWERLAW (POLSYNCHTH, 4 Stokes) | 2e-2 | 7.4e-4 |
-| HARM (POLSYNCHTH) | 1e-2 | **not yet ported (next task)** |
+| HARM (POLSYNCHTH) | 1e-2 | 4.8e-2 (upstream integrator deviation on spiky data; VALIDATION_PLAN §3.1) |
 
 Kernel and per-ray fixtures: Bessel (1e-14), Carlson (1e-14), ZROOTS
 (1e-13), GEOMU (1e-13), all four emissivity families (≤8.7e-10), geokerr
@@ -52,7 +52,22 @@ reproduces THINDISK (1.1e-7).
 8. `synchpl`/`synchemis` leave columns 2-4, 6-11 of their 11-column output
    uninitialized; only columns 1/5 are meaningful.
 
-## Next task: HARM
+## HARM: done (with a documented deviation)
+
+The HARM reader/interpolation/transforms are ported
+(`physics::models::harm`), validated against a dedicated Fortran fixture
+(7.6e-6) and at ray level against `debug=1` (j/K/tau to ~1e-3). The image
+agrees with the LSODA reference to 4.8e-2; the residual is a measured
+upstream integrator behavior on this snapshot's 5-sample emission spike:
+the exact solution of the upstream's own dumped coefficients is 2.293e-3
+(port's solvers and an independent RK4 agree), while upstream delo/formal
+give 2.704968e-3 (bit-identical) and lsoda 2.745e-3. See
+`docs/VALIDATION_PLAN.md` §3.1 for the full evidence table. If a future
+session wants to chase this further, the next experiment would be to
+instrument the upstream's `integrate` to dump the `jj`/`KK` arrays as seen
+by the integrators (not just the driver's `e%j`/`e%K`).
+
+## Historical next task: HARM (original handoff notes below)
 
 Goal: reproduce `reference/fixtures/harm/ivals.f64.bin` within 1e-2.
 

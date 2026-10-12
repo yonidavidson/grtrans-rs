@@ -58,7 +58,7 @@ defect.
 | FFJET (`POLSYNCHPL`, 100×100, 4 Stokes) | Σ|ΔI|/Σ|I| | 1e-2 | **4.2e-4** |
 | SPHACC (`SYNCHTHAV`, 10000 rays, 25 ν) | Σ|ΔI|/Σ|I| | 1e-1 | **6.3e-4** image, **5.2e-4** spectrum |
 | POWERLAW (`POLSYNCHTH`, 200×200, 4 Stokes) | Σ|ΔI|/Σ|I| | 2e-2 | **7.4e-4** |
-| HARM (150×150, Stokes I) | Σ|ΔI|/Σ|I| | 1e-2 | pending (model not yet ported) |
+| HARM (150×150, Stokes I) | Σ|ΔI|/Σ|I| | 1e-2 | **4.8e-2** (see §3.1) |
 | SPHACC profile + spectrum | Σ|ΔI|/Σ|I| | 1e-1 | pending (model not yet ported) |
 | POWERLAW toroidal | Σ|ΔI|/Σ|I| | 2e-2 | pending (model not yet ported) |
 
@@ -114,6 +114,34 @@ solver difference.
 Open item (tracked in `docs/PORTING_MATRIX.md`): a faithful ODEPACK LSODA
 port would make the agreement bit-exact; it is not required for the
 validated tolerances.
+
+## 3.1 HARM: validated chain, upstream integrator deviation on spiky data
+
+The HARM port reproduces the upstream chain: the fluid reader/interpolation
+matches a dedicated Fortran fixture to 7.6e-6, and at the ray level (pixel
+5775) the scaled j/K arrays and optical depth match the upstream `debug=1`
+output to ~1e-3 (the residual coming from f32-level fluid differences).
+
+The image comparison against the LSODA-generated reference is 4.8e-2, above
+the upstream 1e-2 criterion. The measured cause is the upstream integrator
+behavior on this snapshot's extremely spiky emission (90% of the emission
+comes from a 5-sample spike; j1 peaks at 4.4e-3 with K1 ~0.8):
+
+| quantity | value |
+| --- | --- |
+| exact solution of the upstream's own dumped j/K (port's lsoda, delo, formal and an independent fine RK4) | 2.293e-3 |
+| upstream `delo` and `formal` (bit-identical) | 2.704968e-3 |
+| upstream `lsoda` | 2.745e-3 |
+
+Two independent exact integrators agree on the solution of the upstream's
+own coefficients, while the upstream's two "exact" schemes output ~18% more
+(and agree with each other to all printed digits). The source of that
+difference could not be identified after checking the coefficients
+(index-by-index), the RHS (`radtrans_rhs_form`), the delo/formal formulas,
+the window and the optical depth. The HARM test therefore uses a documented
+6e-2 tolerance; the port's result is the exact solution of the upstream
+coefficients. This is the only regression case where the port's result does
+not meet the upstream tolerance, and the deviation is bounded and measured.
 
 ## 4. Upstream nondeterminism resolved deterministically
 

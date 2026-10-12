@@ -192,8 +192,10 @@ pub fn trace_ray(
                         opts.ortol,
                     );
                     r.npts = nptsout;
+                    // upstream copies only r%neq (= nvals) rows of the
+                    // integrated Stokes vector
                     for i in 0..npts {
-                        for q in 0..4 {
+                        for q in 0..nvals.min(4) {
                             r.i[q * npts + i] = intensity[i][q] * fac * lbh;
                         }
                     }
