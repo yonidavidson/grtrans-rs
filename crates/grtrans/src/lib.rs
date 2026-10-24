@@ -26,5 +26,6 @@
 #![allow(unused_assignments)] // Fortran re-assignment patterns are preserved
 
 pub mod driver;
+pub mod fits;
 pub mod inputs;
 pub mod run;

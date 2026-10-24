@@ -83,7 +83,7 @@ Documented upstream quirks reproduced or resolved:
 | --- | --- | --- | --- |
 | `grtrans_driver.f90` | `grtrans::driver` | done | single-point and integrated paths validated (THINDISK, FFJET ray chain) |
 | `read_inputs.f90` | `grtrans::cli` (in progress) | partial | namelist parsing |
-| FITS output | — | pending | binary fixture comparison used instead |
+| FITS output (`camera.f90` `kwrite_raytrace_camera`, cflag=1) | `grtrans::fits::write_fits` | done | dependency-free writer (2880-byte blocks, big-endian f32); primary + one IMAGE extension per frequency, NX/NY/NU at positional cards 6/7/8 as the upstream Python reader assumes. Validated with astropy + the upstream reader logic on THINDISK (1.14e-7, ab exact) and a structural round-trip test |
 | plain binary output | — | pending | |
 | `grtrans.f90`/`grtrans_program.f90` | `grtrans` CLI | partial | orchestrator in place, `files.in` entry pending |
 | `pgrtrans.f90` | `grtrans-python` | pending | PyO3 skeleton only |

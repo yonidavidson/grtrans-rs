@@ -26,6 +26,16 @@ All 26 cargo test targets pass. The CLI reproduces THINDISK through the full
 file→pipeline→binary path (1.1e-7); the PyO3 wheel builds with maturin and
 reproduces THINDISK (1.1e-7).
 
+## Milestone: FITS output (2026-10-24)
+
+* Implemented `grtrans::fits::write_fits` (no cfitsio dependency): primary
+  pixel-location HDU plus one IMAGE extension per frequency, 2880-byte
+  blocks, 80-char cards, big-endian f32. NX/NY/NU are written at positional
+  cards 6/7/8 because upstream `grtrans_batch.read_grtrans_output` reads
+  them by position. CLI `cflag=1` now writes FITS instead of warning.
+* Validated: structural round-trip test, CLI THINDISK FITS vs reference
+  (1.14e-7), and astropy + the upstream reader logic (1.14e-7, ab exact).
+
 ## Milestone: stiff-stable transfer integrator + SARIAF (2026-10-24)
 
 * Replaced the four-Stokes explicit DP5 substitute with a stiff-stable
@@ -162,13 +172,21 @@ self-contained.
 
 ## Then (optional, in order of value)
 
-1. A faithful ODEPACK LSODA port (bit-exactness; currently ≤8e-4 agreement
-   via the substitute).
-2. FITS output (`camera.f90` `kwrite_raytrace_camera` cflag=1) — cfitsio
-   dependency; binary output already implemented.
-3. Remaining fluid models requiring external data (PHATDISK, NUMDISK,
-   HOTSPOT, SCHNITTMAN, SARIAF, TOY) — blocked without data files.
-4. `lsodasph` (experimental upstream, marked "in development").
+1. A faithful ODEPACK LSODA port (bit-exactness; the substitute matches the
+   exact ODE solution to ~3e-6 on thick pixels, and where it differs from
+   upstream LSODA the difference is upstream's own solver error — see
+   VALIDATION_PLAN §3.1/§3.2).
+2. ~~FITS output~~ — done (`grtrans::fits::write_fits`, cflag=1).
+3. Remaining self-contained fluid models: PHATDISK (+ INTERP emissivity),
+   TOY, HOTSPOT, SCHNITTMAN. SARIAF is done. TOY uses uninitialized state
+   upstream (`bb`, stale `f%u` in `aleph`), so it can only be ported with
+   documented deterministic choices, not fixture-validated. NUMDISK,
+   HARM3D/HARMPI/IHARM/KORAL*/MB09/THICKDISK remain blocked on external
+   simulation dumps not shipped upstream.
+4. Remaining emissivities: BREMS, SYNCHTHBREMS, SYNCHTHAVNOABS, HYBRIDTH/PL/
+   THPL, MAXJUTT/MAXCOMP (with calc_maxjutt/calc_maxcomp); INTERP/INTERPPOL
+   need external tables.
+5. `lsodasph` (experimental upstream, marked "in development").
 
 ## How to run everything
 
