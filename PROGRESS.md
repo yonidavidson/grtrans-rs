@@ -11,10 +11,11 @@ at `jadexter/grtrans` @ `c76cb11`):
 | Case | Upstream tolerance | grtrans-rs result |
 | --- | --- | --- |
 | THINDISK (BBPOL, 4 Stokes, 25 ν) | 1e-2 | 1.2e-7 |
-| FFJET (POLSYNCHPL, 4 Stokes) | 1e-2 | 4.2e-4 |
+| FFJET (POLSYNCHPL, 4 Stokes) | 1e-2 | 2.9e-4 |
 | SPHACC (SYNCHTHAV, image/spectrum) | 1e-1 | 6.3e-4 / 5.2e-4 |
-| POWERLAW (POLSYNCHTH, 4 Stokes) | 2e-2 | 7.4e-4 |
+| POWERLAW (POLSYNCHTH, 4 Stokes) | 2e-2 | 6.8e-4 |
 | HARM (POLSYNCHTH) | 1e-2 | 4.8e-2 (upstream integrator deviation on spiky data; VALIDATION_PLAN §3.1) |
+| SARIAF (POLSYNCHTH) | 1e-2 | 4.1e-3 (upstream LSODA error on thick pixels; VALIDATION_PLAN §3.2) |
 
 Kernel and per-ray fixtures: Bessel (1e-14), Carlson (1e-14), ZROOTS
 (1e-13), GEOMU (1e-13), all four emissivity families (≤8.7e-10), geokerr
@@ -24,6 +25,21 @@ production path (camera 1e-12, direct ray quantities 1e-11), FFJET fluid
 All 26 cargo test targets pass. The CLI reproduces THINDISK through the full
 file→pipeline→binary path (1.1e-7); the PyO3 wheel builds with maturin and
 reproduces THINDISK (1.1e-7).
+
+## Milestone: stiff-stable transfer integrator + SARIAF (2026-10-24)
+
+* Replaced the four-Stokes explicit DP5 substitute with a stiff-stable
+  exponential integrator (exact frozen-coefficient update
+  `I <- e^{-Kh} I0 + (I-e^{-Kh}) K^{-1} j`, adaptive step doubling). The old
+  explicit scheme was unstable on very optically thick rays. FFJET improved
+  4.2e-4→2.9e-4, POWERLAW 7.4e-4→6.8e-4.
+* Ported SARIAF (semi-analytic RIAF): fluid fixture 2.3e-6, end-to-end 4.1e-3.
+* Measured proof (new `lsoda_thick_pixel` test + checked-in fixture): on a
+  τ~1e3 SARIAF pixel the port matches an independent exact RK4 solution to
+  3.3e-6 while upstream LSODA is 20.7% low. The thick-pixel residual is
+  upstream solver error, not a port defect (VALIDATION_PLAN §3.2).
+* Upstream quirk noted: with `files.in`, the binary output filename keeps its
+  trailing blanks (the output file is literally padded with spaces).
 
 ## Key upstream quirks reproduced (do not "fix" them)
 

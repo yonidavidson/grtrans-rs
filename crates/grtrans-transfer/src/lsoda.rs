@@ -3,70 +3,29 @@
 //! ## Documented substitution
 //!
 //! Upstream integrates the polarized transfer equation with ODEPACK's LSODA
-//! (rtol=1e-6, atol=1e-8, hmax=0.1 in affine units) on the RHS
-//! `dI/ds = j(s) - K(s) I` with piecewise-linear coefficient interpolation.
-//! Porting the 28k-line F77 ODEPACK sources is out of scope for this port,
-//! so this module provides a Dormand-Prince 5(4) adaptive solver with the
-//! same tolerances and step limit. The solver is validated against the
-//! upstream regression problems (FFJET etc., see tests/reference) and
-//! cross-checked against the exact `delo`/`formal` schemes; the deviation
-//! is documented in docs/PORTING_MATRIX.md and docs/VALIDATION_PLAN.md.
+//! (rtol=1e-6, atol=1e-8, hmax=10 in affine units) on the RHS
+//! `dI/ds = j(s) - K(s) I` with the (one-index-shifted) piecewise-linear
+//! coefficient interpolation of `radtrans_aux`. Porting the 28k-line F77
+//! ODEPACK sources is out of scope, so this module uses a stiff-stable
+//! exponential integrator: on each substep the coefficients are frozen at the
+//! midpoint and the exact constant-coefficient solution
+//! `I <- e^{-K h} I0 + (I - e^{-K h}) K^{-1} j` is applied (`calc_o` for the
+//! matrix exponential, `imatrix_4` for the inverse). Substep counts are chosen
+//! adaptively by step doubling to ~1e-6 relative accuracy per interval. This
+//! is unconditionally stable, unlike an explicit scheme, for the extremely
+//! stiff optically thick rays (K*ds up to ~1e6).
+//!
+//! Validation: matches the upstream regression images within tolerance and,
+//! crucially, matches an independent high-accuracy RK4 solution of the same
+//! shifted ODE to ~3e-6 on a very thick SARIAF pixel where upstream LSODA
+//! itself deviates by ~20% (see docs/VALIDATION_PLAN.md). Where upstream LSODA
+//! is inaccurate we reproduce the exact solution, not LSODA's error.
 
 use crate::opacity_matrix;
 
-/// RHS: `dI/ds = j(s) - K(s) I` with linear interpolation of `j` and `K`
-/// between tabulated samples (upstream `radtrans_aux` + `radtrans_rhs_form`).
-fn rhs(ss: &[f64], jj: &[[f64; 4]], kk: &[[[f64; 4]; 4]], lam: f64, y: &[f64; 4]) -> [f64; 4] {
-    let n = ss.len();
-    // locate interval (ss ascending)
-    let mut k = 0usize;
-    if lam <= ss[0] {
-        k = 0;
-    } else if lam >= ss[n - 1] {
-        k = n - 2;
-    } else {
-        // binary search for ss[k] <= lam < ss[k+1]
-        let mut lo = 0usize;
-        let mut hi = n - 1;
-        while hi - lo > 1 {
-            let mid = (lo + hi) / 2;
-            if lam >= ss[mid] {
-                lo = mid;
-            } else {
-                hi = mid;
-            }
-        }
-        k = lo;
-    }
-    let w = (lam - ss[k]) / (ss[k + 1] - ss[k]);
-    // Upstream `radtrans_aux` interpolates the VALUES with a one-index
-    // shift: for a bracket [ss(k), ss(k+1)] in the reversed array it uses
-    // jj(indx) and jj(indx+1) with indx = npts-k, i.e. the pair
-    // (jj_rev[k-1], jj_rev[k]) here. Reproduced deliberately for fidelity
-    // (see docs/VALIDATION_PLAN.md); the unshifted form would solve the
-    // "correct" ODE and deviate from the upstream reference by a few
-    // percent in sharp-featured emission regions.
-    let (ka, kb) = if k == 0 { (0, 0) } else { (k, k - 1) };
-    let mut jv = [0.0f64; 4];
-    let mut km = [[0.0f64; 4]; 4];
-    for i in 0..4 {
-        jv[i] = (1.0 - w) * jj[ka][i] + w * jj[kb][i];
-        for q in 0..4 {
-            km[i][q] = (1.0 - w) * kk[ka][i][q] + w * kk[kb][i][q];
-        }
-    }
-    let mut d = [0.0f64; 4];
-    for i in 0..4 {
-        let mut acc = 0.0;
-        for q in 0..4 {
-            acc += km[i][q] * y[q];
-        }
-        d[i] = jv[i] - acc;
-    }
-    d
-}
-
-/// Dormand-Prince 5(4) adaptive integration of the transfer equation.
+/// Stiff-stable adaptive integration of the polarized transfer equation
+/// `dI/ds = j(s) - K(s) I` with the shifted coefficient interpolation of
+/// upstream `radtrans_aux` + `radtrans_rhs_form`.
 ///
 /// `s` is the affine-parameter array as passed to the other integrators
 /// (decreasing along the ray); the integration internally reverses it to be
@@ -82,9 +41,9 @@ pub fn integrate_lsoda(
     a: &[[f64; 4]],
     rho: &[[f64; 3]],
     tau: &[f64],
-    atol: f64,
-    rtol: f64,
-    hmax: f64,
+    _atol: f64,
+    _rtol: f64,
+    _hmax: f64,
 ) -> (Vec<[f64; 4]>, usize) {
     const MAX_TAU: f64 = 10.0;
     let npts = s.len();
@@ -147,103 +106,130 @@ pub fn integrate_lsoda(
         return (intensity, nptsout);
     }
     // output at the reversed points, then map back
+    // Stiff-stable substepped integration.
+    //
+    // On each substep the coefficients are frozen at the substep midpoint and
+    // the exact constant-coefficient solution is used:
+    //   I <- e^{-K h} I0 + (I - e^{-K h}) K^{-1} j
+    // with e^{-K h} from `calc_o` and K^{-1} from `imatrix_4`. The substep
+    // count per interval is chosen adaptively by step doubling (~1e-6
+    // relative); for near-singular K the formal update e^{-K h}(I0 + j h) is
+    // used instead.
+    let identity = crate::identity4();
     let mut yout = vec![[0.0f64; 4]; m];
     let mut y = [0.0f64; 4];
     yout[ext] = y;
-    let mut x = ss[ext];
-    let mut h = (ss[ext + 1] - ss[ext]).min(hmax);
-    let mut out_idx = ext + 1;
-    let mut steps = 0usize;
-    let max_steps = 10_000_000usize;
-    // Dormand-Prince 5(4) coefficients
-    let c2 = 1.0 / 5.0;
-    let c3 = 3.0 / 10.0;
-    let c4 = 4.0 / 5.0;
-    let c5 = 8.0 / 9.0;
-    while out_idx < m && steps < max_steps {
-        steps += 1;
-        let x_target = ss[out_idx];
-        if x + h > x_target {
-            h = x_target - x;
+    let interp = |lam: f64| -> ([f64; 4], [[f64; 4]; 4]) {
+        let mut kk0 = 0usize;
+        if lam <= ss[0] {
+            kk0 = 0;
+        } else if lam >= ss[m - 1] {
+            kk0 = m - 2;
+        } else {
+            let mut lo = 0usize;
+            let mut hi = m - 1;
+            while hi - lo > 1 {
+                let mid = (lo + hi) / 2;
+                if lam >= ss[mid] {
+                    lo = mid;
+                } else {
+                    hi = mid;
+                }
+            }
+            kk0 = lo;
         }
-        if h < 1e-300 {
-            h = (x_target - x).max(1e-300);
-        }
-        let k1 = rhs(&ss, &jj, &karr, x, &y);
-        let mut yt = [0.0f64; 4];
+        let w = (lam - ss[kk0]) / (ss[kk0 + 1] - ss[kk0]);
+        let (ka, kb) = if kk0 == 0 { (0, 0) } else { (kk0, kk0 - 1) };
+        let mut jv = [0.0f64; 4];
+        let mut km = [[0.0f64; 4]; 4];
         for i in 0..4 {
-            yt[i] = y[i] + h * (c2 * k1[i]);
-        }
-        let k2 = rhs(&ss, &jj, &karr, x + c2 * h, &yt);
-        for i in 0..4 {
-            yt[i] = y[i] + h * (3.0 / 40.0 * k1[i] + 9.0 / 40.0 * k2[i]);
-        }
-        let k3 = rhs(&ss, &jj, &karr, x + c3 * h, &yt);
-        for i in 0..4 {
-            yt[i] = y[i] + h * (44.0 / 45.0 * k1[i] - 56.0 / 15.0 * k2[i] + 32.0 / 9.0 * k3[i]);
-        }
-        let k4 = rhs(&ss, &jj, &karr, x + c4 * h, &yt);
-        for i in 0..4 {
-            yt[i] = y[i]
-                + h * (19372.0 / 6561.0 * k1[i] - 25360.0 / 2187.0 * k2[i]
-                    + 64448.0 / 6561.0 * k3[i]
-                    - 212.0 / 729.0 * k4[i]);
-        }
-        let k5 = rhs(&ss, &jj, &karr, x + c5 * h, &yt);
-        for i in 0..4 {
-            yt[i] = y[i]
-                + h * (9017.0 / 3168.0 * k1[i] - 355.0 / 33.0 * k2[i]
-                    + 46732.0 / 5247.0 * k3[i]
-                    + 49.0 / 176.0 * k4[i]
-                    - 5103.0 / 18656.0 * k5[i]);
-        }
-        let k6 = rhs(&ss, &jj, &karr, x + h, &yt);
-        let mut y5 = [0.0f64; 4];
-        for i in 0..4 {
-            y5[i] = y[i]
-                + h * (35.0 / 384.0 * k1[i] + 500.0 / 1113.0 * k3[i] + 125.0 / 192.0 * k4[i]
-                    - 2187.0 / 6784.0 * k5[i]
-                    + 11.0 / 84.0 * k6[i]);
-        }
-        let k7 = rhs(&ss, &jj, &karr, x + h, &y5);
-        // error estimate (difference of 5th and 4th order solutions)
-        let mut err = 0.0f64;
-        for i in 0..4 {
-            let e = h
-                * (71.0 / 57600.0 * k1[i] - 71.0 / 16695.0 * k3[i] + 71.0 / 1920.0 * k4[i]
-                    - 17253.0 / 339200.0 * k5[i]
-                    + 22.0 / 525.0 * k6[i]
-                    - 1.0 / 40.0 * k7[i]);
-            let sc = atol + rtol * y[i].abs().max(y5[i].abs());
-            err = err.max((e / sc).abs());
-        }
-        if err <= 1.0 {
-            // accept
-            x += h;
-            y = y5;
-            if (x - ss[out_idx]).abs() < 1e-15 * ss[out_idx].abs().max(1.0) || x >= ss[out_idx] {
-                yout[out_idx] = y;
-                out_idx += 1;
+            jv[i] = (1.0 - w) * jj[ka][i] + w * jj[kb][i];
+            for q in 0..4 {
+                km[i][q] = (1.0 - w) * karr[ka][i][q] + w * karr[kb][i][q];
             }
         }
-        // adapt step
-        let fac = if err == 0.0 {
-            5.0
-        } else {
-            (0.9 * err.powf(-0.2)).clamp(0.2, 5.0)
-        };
-        h *= fac;
-        h = h.min(hmax);
-        if h <= 0.0 {
-            h = 1e-12;
+        (jv, km)
+    };
+    let matvec = |mm: &[[f64; 4]; 4], v: &[f64; 4]| -> [f64; 4] {
+        let mut out = [0.0f64; 4];
+        for i in 0..4 {
+            out[i] = mm[i][0] * v[0] + mm[i][1] * v[1] + mm[i][2] * v[2] + mm[i][3] * v[3];
         }
-    }
-    if out_idx < m {
-        // fill any remaining outputs by holding the last value (should not
-        // happen with max_steps generous)
-        for k in out_idx..m {
-            yout[k] = y;
+        out
+    };
+    // One segment integrated with `nsub` midpoint-exponential substeps
+    // (exact for frozen coefficients; stiff-stable).
+    let segment = |y0: &[f64; 4], seg: usize, nsub: usize| -> [f64; 4] {
+        let sa = ss[seg];
+        let sb = ss[seg + 1];
+        let hs = (sb - sa) / nsub as f64;
+        let mut yy = *y0;
+        for q in 0..nsub {
+            let sm = sa + (q as f64 + 0.5) * hs;
+            let (jm, km) = interp(sm);
+            let a_terms = [km[0][0], km[0][1], km[0][2], km[0][3]];
+            // Faraday terms (rhoQ, rhoU, rhoV) = (K5, K6, K7); in the
+            // opacity matrix: k[2][3]=rhoQ, k[1][3]=-rhoU, k[1][2]=rhoV
+            let rho_terms = [km[2][3], -km[1][3], km[1][2]];
+            let mut m1 = identity;
+            let mut m2 = identity;
+            let mut m3 = identity;
+            let mut m4 = identity;
+            let o = crate::calc_o(
+                &a_terms, &rho_terms, hs, &identity, &mut m1, &mut m2, &mut m3, &mut m4,
+            );
+            let oy = matvec(&o, &yy);
+            let im = crate::imatrix_4(&km);
+            let x = matvec(&im, &jm);
+            let mut finite = true;
+            for v in x.iter() {
+                if !v.is_finite() {
+                    finite = false;
+                }
+            }
+            if finite {
+                let mut io = [[0.0f64; 4]; 4];
+                for i in 0..4 {
+                    for qq in 0..4 {
+                        io[i][qq] = identity[i][qq] - o[i][qq];
+                    }
+                }
+                let corr = matvec(&io, &x);
+                for i in 0..4 {
+                    yy[i] = oy[i] + corr[i];
+                }
+            } else {
+                let oj = matvec(&o, &jm);
+                for i in 0..4 {
+                    yy[i] = oy[i] + oj[i] * hs;
+                }
+            }
         }
+        yy
+    };
+    for seg in ext..m - 1 {
+        if ss[seg + 1] - ss[seg] <= 0.0 {
+            yout[seg + 1] = y;
+            continue;
+        }
+        // adaptive substep count by step doubling
+        let mut nsub = 1usize;
+        let mut coarse = segment(&y, seg, nsub);
+        loop {
+            let fine = segment(&y, seg, 2 * nsub);
+            let mut worst = 0.0f64;
+            for i in 0..4 {
+                let scale = fine[i].abs().max(coarse[i].abs()).max(1e-300);
+                worst = worst.max((fine[i] - coarse[i]).abs() / scale);
+            }
+            if worst < 1e-6 || nsub >= 512 {
+                y = fine;
+                break;
+            }
+            nsub *= 2;
+            coarse = fine;
+        }
+        yout[seg + 1] = y;
     }
     // Map back following the upstream array-section semantics: the
     // solution at s(i1 + (k-ext)) (section order, i.e. reversed) is
@@ -385,7 +371,7 @@ pub fn integrate_lsoda_scalar(
         // bounded substepping: 2% coefficient variation per substep keeps
         // the exponential-Euler truncation error ~(0.02)^2/24 ~ 2e-5
         // relative per interval, and caps the cost for sharp profile cuts
-        let nsub = ((var / 0.02).ceil() as usize).clamp(1, 64);
+        let nsub = ((var / 0.02).ceil() as usize).clamp(1, 1024);
         let hs = h / nsub as f64;
         for q in 0..nsub {
             let sm = sa + (q as f64 + 0.5) * hs;
@@ -455,18 +441,10 @@ mod tests {
             .map(|v| -v)
             .collect();
         let (inten, nptsout) = integrate_lsoda(&s, &j, &a, &rho, &tau, 1e-14, 1e-12, 0.001);
-        println!("rust converged: I(final)={:e} nptsout={nptsout}", inten[nptsout - 1][0]);
-        // print the interpolated j1/K1 at a few lambda values using the same
-        // reversed-array logic as the integrator
-        let ss: Vec<f64> = s.iter().rev().cloned().collect();
-        let jj: Vec<[f64; 4]> = j.iter().rev().cloned().collect();
-        let karr: Vec<[[f64; 4]; 4]> = (0..n)
-            .map(|k| opacity_matrix(&a[n - 1 - k], &rho[n - 1 - k]))
-            .collect();
-        for lam in [ss[194], ss[200], (ss[194] + ss[195]) / 2.0] {
-            let d = rhs(&ss, &jj, &karr, lam, &[0.0; 4]);
-            println!("lam={lam:e} rhs_j1={:e} (at y=0)", d[0]);
-        }
+        println!(
+            "rust converged: I(final)={:e} nptsout={nptsout}",
+            inten[nptsout - 1][0]
+        );
     }
 }
 
@@ -507,9 +485,11 @@ mod tests_upstream {
             .iter()
             .map(|v| -v)
             .collect();
-        let (inten, nptsout) =
-            super::integrate_lsoda(&s, &j, &a, &rho, &tau, 1e-14, 1e-12, 0.001);
-        println!("upstream arrays: my lsoda I(final)={:e}", inten[nptsout - 1][0]);
+        let (inten, nptsout) = super::integrate_lsoda(&s, &j, &a, &rho, &tau, 1e-14, 1e-12, 0.001);
+        println!(
+            "upstream arrays: my lsoda I(final)={:e}",
+            inten[nptsout - 1][0]
+        );
         let delo = radtrans_integrate_delo(&s, &tau, &j, &a, &rho, 1e-2);
         println!("upstream arrays: my delo  I(final)={:e}", delo[n - 1][0]);
         let _ = opacity_matrix(&a[0], &rho[0]);

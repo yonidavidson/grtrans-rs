@@ -12,6 +12,7 @@
 use crate::models::ffjet::{self, FfjetData};
 use crate::models::harm::{self, HarmData};
 use crate::models::powerlaw::{self, PowerlawState};
+use crate::models::sariaf::{self, SariafState};
 use crate::models::sphacc;
 use crate::models::thindisk::{self, ThindiskState};
 use grtrans_core::four_vector::FourVector;
@@ -170,6 +171,7 @@ pub enum ModelState {
     Sphacc,
     Powerlaw(PowerlawState),
     Harm(Arc<HarmData>),
+    Sariaf(SariafState),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -255,6 +257,12 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
             f.bmag = vec![0.0; nup];
             f.p = vec![0.0; nup];
         }
+        "SARIAF" => {
+            f.model = model::SARIAF;
+            f.bmag = vec![0.0; nup];
+            f.p = vec![0.0; nup];
+            f.rho2 = vec![0.0; nup];
+        }
         _ => {
             f.model = model::DUMMY;
         }
@@ -291,6 +299,22 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
             LoadedFluid {
                 name: fname.to_string(),
                 state: ModelState::Harm(Arc::new(data)),
+            }
+        }
+        "SARIAF" => {
+            let mut state = SariafState::default();
+            sariaf::init_sariaf(
+                &mut state,
+                args.nscl as f32,
+                args.tscl as f32,
+                args.nnthscl as f32,
+                args.nnthp as f32,
+                args.beta as f32,
+                args.bl06,
+            );
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Sariaf(state),
             }
         }
         "POWERLAW" => {
@@ -360,6 +384,9 @@ pub fn get_fluid_vars(
         (ModelState::Harm(data), model::HARM) => {
             harm::get_harm_fluidvars(data, x, a as f32, f);
         }
+        (ModelState::Sariaf(state), model::SARIAF) => {
+            sariaf::get_sariaf_fluidvars(state, x, a as f32, f);
+        }
         _ => {
             for v in f.u.iter_mut() {
                 *v = FourVector::flat([0.0; 4]);
@@ -397,17 +424,20 @@ pub fn convert_fluid_vars(
             let tcgs: Vec<f64> = f.p.iter().map(|v| *v as f64).collect();
             (ncgs, vec![0.0; n], bcgs, tcgs)
         }
+        model::SARIAF => {
+            // convert_fluidvars_sariaf: ncgs=rho, bcgs=bmag, ncgsnth=rho2,
+            // tcgs=p
+            let ncgs: Vec<f64> = f.rho.iter().map(|v| *v as f64).collect();
+            let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64).collect();
+            let ncgsnth: Vec<f64> = f.rho2.iter().map(|v| *v as f64).collect();
+            let tcgs: Vec<f64> = f.p.iter().map(|v| *v as f64).collect();
+            (ncgs, ncgsnth, bcgs, tcgs)
+        }
         model::HARM => {
             // convert_fluidvars_harm: scale_sim_units + monika_e with
             // rlow=muval, rhigh=muval/gminval; T_e = T_p * trat
-            let (ncgs, bcgs, tempcgs) = harm::scale_sim_units(
-                sp.mbh,
-                sp.mdot,
-                0.003,
-                &f.rho,
-                &f.p,
-                &f.bmag,
-            );
+            let (ncgs, bcgs, tempcgs) =
+                harm::scale_sim_units(sp.mbh, sp.mdot, 0.003, &f.rho, &f.p, &f.bmag);
             let trat = powerlaw::monika_e(&f.rho, &f.p, &f.bmag, sp.muval, sp.muval / sp.gminval);
             let tcgs: Vec<f64> = (0..n).map(|i| tempcgs[i] * trat[i]).collect();
             (ncgs.clone(), ncgs, bcgs, tcgs)

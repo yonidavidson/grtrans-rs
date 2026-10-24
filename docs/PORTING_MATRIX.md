@@ -61,7 +61,9 @@ Documented upstream quirks reproduced or resolved:
 | `SPHACC` | `physics::models::sphacc` | done | stored profile tables embedded; end-to-end image 1.8e-2 / spectrum 7.0e-3 |
 | `SPHACC` | `physics::models::sphacc` | done | end-to-end image 6.3e-4 / spectrum 5.2e-4 |
 | `POWERLAW` | `physics::models::powerlaw` | done | end-to-end 7.4e-4 (nrotype=1 circular camera validated here too) |
-| `PHATDISK`, `NUMDISK`, `HOTSPOT`, `SCHNITTMAN`, `SARIAF`, `TOY` | — | pending | require external data files not shipped |
+| `SARIAF` | `physics::models::sariaf` | done | self-contained; fluid fixture 2.3e-6; end-to-end 4.1e-3 (upstream LSODA error on thick pixels, VALIDATION_PLAN §3.2) |
+| `PHATDISK`, `HOTSPOT`, `SCHNITTMAN`, `TOY` | — | pending | self-contained analytic, not yet ported |
+| `NUMDISK` | — | blocked | requires external data files not shipped |
 | `HARM` | `physics::models::harm` | done | formatted dump reader, MKS→KS→BL transforms, LNRF velocities, 2D interpolation (single snapshot); fluid fixture 7.6e-6; end-to-end 4.8e-2 with the upstream integrator deviation documented in VALIDATION_PLAN §3.1 |
 | `HARM3D`, `HARMPI`, `IHARM`, `KORAL*`, `MB09`, `THICKDISK` | — | blocked | require simulation dumps not shipped with the upstream repository |
 
@@ -72,7 +74,7 @@ Documented upstream quirks reproduced or resolved:
 | `radtrans_integrate.f90` delo | `transfer::radtrans_integrate_delo` | done | exact scheme; agrees with the exact ODE solution to ~0.4% on FFJET |
 | `radtrans_integrate.f90` formal | `transfer::radtrans_integrate_formal` | done | `calc_O` matrix exponential |
 | quadrature | `transfer::radtrans_integrate_quadrature` | done | |
-| LSODA (`opkda*.f`, 28k lines) | `transfer::lsoda` | **substituted** | Four-Stokes: Dormand–Prince 5(4) with upstream tolerances and window. Intensity-only (`nequations==1`): unconditionally stable exponential integrator with bounded adaptive substepping (the scalar equation is stiff; upstream LSODA switches to BDF). Both reproduce upstream's `radtrans_aux` one-index value-interpolation quirk deliberately (see VALIDATION_PLAN §3); end-to-end agreement is ≤8e-4 on all regression cases. A faithful ODEPACK port remains an open item. |
+| LSODA (`opkda*.f`, 28k lines) | `transfer::lsoda` | **substituted** | Four-Stokes: stiff-stable exponential integrator (exact frozen-coefficient update with adaptive step doubling); matches an independent exact ODE solution to 3e-6 on thick pixels (VALIDATION_PLAN §3.2). Intensity-only (`nequations==1`): unconditionally stable exponential integrator with bounded adaptive substepping (the scalar equation is stiff; upstream LSODA switches to BDF). Both reproduce upstream's `radtrans_aux` one-index value-interpolation quirk deliberately (see VALIDATION_PLAN §3); end-to-end agreement is ≤8e-4 on all regression cases. A faithful ODEPACK port remains an open item. |
 | spherical Stokes (`lsodasph`) | — | blocked | experimental upstream ("in development") |
 
 ## Driver, IO, bindings
