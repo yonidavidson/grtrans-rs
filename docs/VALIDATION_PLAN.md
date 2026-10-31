@@ -276,3 +276,44 @@ image. INTERP also uses single-precision interpolation arithmetic
 (`yix/xix/jslope/yy` are `real`), which we reproduce; below the frequency
 grid the upstream reads `freqarr(0)` out of bounds (NaN) and we clamp to the
 first segment instead (documented edge deviation).
+
+## 3.5 SCHNITTMAN: delo validation and the lsoda-substitute's sharp-feature limit
+
+SCHNITTMAN (Cartesian Gaussian hot spot, unit-normalized toroidal field) was
+ported with a documented convert choice (ncgsnth=rho, tcgs=0, since upstream
+leaves them unassigned). The fluid matches a dedicated Fortran fixture to
+1.3e-8. The end-to-end comparison is done with the exact `delo` integrator:
+
+| comparison | relative error |
+| --- | --- |
+| our delo vs upstream delo | **3.0e-7** |
+| our lsoda-substitute vs upstream LSODA | 1.10e-1 |
+| upstream LSODA vs upstream delo (shift effect) | 1.4e-2 |
+
+Our delo is exact, so the fluid/chain is correct. The lsoda-substitute
+(piecewise-constant midpoint coefficients with adaptive step doubling)
+under-resolves the very sharp spot cutoff and deviates by 11% from both delo
+and upstream LSODA. For very sharp emission features the delo/formal schemes
+(piecewise-linear coefficients) should be used; the lsoda-substitute is
+accurate for smooth emission (all the other regression cases, and the thick
+SARIAF pixel where it matches an independent RK4 to 3e-6). This is a known
+limitation, not a model defect.
+
+## 3.6 TOY: validated profile and velocity, documented aleph/bb defects
+
+TOY (code-comparison toy) has two upstream defects: `aleph` is computed from
+the *previous* call's `f%u` (stale/uninitialized) and `bb` is never assigned,
+so the magnetic field is garbage. We make two documented deterministic
+choices: compute the four-velocity first and evaluate `aleph` from it, and
+use the standard toroidal normalization for `bb`. The well-defined parts are
+fixture-validated:
+
+| component | relative error |
+| --- | --- |
+| `toy_vals` (density and specific angular momentum) | 1.6e-17 |
+| four-velocity (contravariant construction) | 6.7e-17 |
+
+With a physically reasonable `l0` the velocity is real (a large `l0` makes it
+NaN/superluminal). The end-to-end TOY+POLSYNCHPL test is a self-consistency
+check (finite, physical image), since upstream's aleph/bb garbage means there
+is no valid reference.

@@ -11,11 +11,14 @@
 
 use crate::models::ffjet::{self, FfjetData};
 use crate::models::harm::{self, HarmData};
+use crate::models::hotspot::{self, HotspotState};
 use crate::models::phatdisk::{self, PhatdiskState};
 use crate::models::powerlaw::{self, PowerlawState};
 use crate::models::sariaf::{self, SariafState};
+use crate::models::schnittman::{self, SchnittmanState};
 use crate::models::sphacc;
 use crate::models::thindisk::{self, ThindiskState};
+use crate::models::toy::{self, ToyState};
 use grtrans_core::four_vector::FourVector;
 use std::sync::Arc;
 
@@ -174,6 +177,9 @@ pub enum ModelState {
     Harm(Arc<HarmData>),
     Sariaf(SariafState),
     Phatdisk(Arc<PhatdiskState>),
+    Hotspot(HotspotState),
+    Schnittman(SchnittmanState),
+    Toy(ToyState),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -274,6 +280,18 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
         "PHATDISK" => {
             f.model = model::PHATDISK;
         }
+        "HOTSPOT" => {
+            f.model = model::HOTSPOT;
+            f.bmag = vec![0.0; nup];
+        }
+        "SCHNITTMAN" => {
+            f.model = model::SCHNITTMAN;
+            f.bmag = vec![0.0; nup];
+        }
+        "TOY" => {
+            f.model = model::TOY;
+            f.bmag = vec![0.0; nup];
+        }
         _ => {
             f.model = model::DUMMY;
         }
@@ -326,6 +344,30 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
             LoadedFluid {
                 name: fname.to_string(),
                 state: ModelState::Sariaf(state),
+            }
+        }
+        "TOY" => {
+            let mut state = ToyState::default();
+            toy::init_toy(&mut state, args.nscl, args.tscl, args.beta, args.bl06);
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Toy(state),
+            }
+        }
+        "SCHNITTMAN" => {
+            let mut state = SchnittmanState::default();
+            schnittman::init_schnittman_hotspot(&mut state, args.rspot, args.r0spot, args.n0spot);
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Schnittman(state),
+            }
+        }
+        "HOTSPOT" => {
+            let mut state = HotspotState::default();
+            hotspot::init_hotspot(&mut state, args.rspot, args.r0spot, args.n0spot, args.bl06);
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Hotspot(state),
             }
         }
         "PHATDISK" => {
@@ -425,6 +467,15 @@ pub fn get_fluid_vars(
         (ModelState::Phatdisk(state), model::PHATDISK) => {
             phatdisk::get_phatdisk_fluidvars(state, x, k, a as f32, f);
         }
+        (ModelState::Hotspot(state), model::HOTSPOT) => {
+            hotspot::get_hotspot_fluidvars(state, x, k, a, f);
+        }
+        (ModelState::Schnittman(state), model::SCHNITTMAN) => {
+            schnittman::get_schnittman_hotspot_fluidvars(state, x, a, f);
+        }
+        (ModelState::Toy(state), model::TOY) => {
+            toy::get_toy_fluidvars(state, x, a, f);
+        }
         _ => {
             for v in f.u.iter_mut() {
                 *v = FourVector::flat([0.0; 4]);
@@ -469,6 +520,18 @@ pub fn convert_fluid_vars(
             let bcgs: Vec<f64> = f.bmag.iter().map(|v| *v as f64).collect();
             let ncgsnth: Vec<f64> = f.rho2.iter().map(|v| *v as f64).collect();
             let tcgs: Vec<f64> = f.p.iter().map(|v| *v as f64).collect();
+            (ncgs, ncgsnth, bcgs, tcgs)
+        }
+        model::HOTSPOT => {
+            let (ncgs, ncgsnth, bcgs, tcgs) = hotspot::convert_hotspot(f);
+            (ncgs, ncgsnth, bcgs, tcgs)
+        }
+        model::SCHNITTMAN => {
+            let (ncgs, ncgsnth, bcgs, tcgs) = schnittman::convert_schnittman(f);
+            (ncgs, ncgsnth, bcgs, tcgs)
+        }
+        model::TOY => {
+            let (ncgs, ncgsnth, bcgs, tcgs) = toy::convert_toy(f);
             (ncgs, ncgsnth, bcgs, tcgs)
         }
         model::HARM => {

@@ -26,6 +26,19 @@ All 26 cargo test targets pass. The CLI reproduces THINDISK through the full
 file→pipeline→binary path (1.1e-7); the PyO3 wheel builds with maturin and
 reproduces THINDISK (1.1e-7).
 
+## Milestone: HOTSPOT, SCHNITTMAN, TOY (2026-10-31)
+
+* Ported HOTSPOT (Gaussian spot, four bl06 field models; fixture 1.0e-7,
+  POLSYNCHPL end-to-end 1.0e-3), SCHNITTMAN (Cartesian spot; fixture 1.3e-8,
+  delo end-to-end 3.0e-7) and TOY (code-comparison toy; toy_vals 1.6e-17,
+  four-velocity 6.7e-17, self-consistency end-to-end).
+* All self-contained fluid models are now ported (THINDISK, FFJET, SPHACC,
+  POWERLAW, HARM, SARIAF, PHATDISK, HOTSPOT, SCHNITTMAN, TOY).
+* Documented two more integrator/upstream issues: the lsoda-substitute
+  under-resolves very sharp emission cutoffs (use delo/formal there,
+  VALIDATION_PLAN §3.5), and TOY's aleph/bb are garbage upstream (documented
+  deterministic choices, §3.6).
+
 ## Milestone: PHATDISK + INTERP (2026-10-31)
 
 * Ported PHATDISK (Novikov-Thorne multicolor thin disk) and the INTERP
@@ -215,12 +228,10 @@ self-contained.
    upstream LSODA the difference is upstream's own solver error — see
    VALIDATION_PLAN §3.1/§3.2).
 2. ~~FITS output~~ — done (`grtrans::fits::write_fits`, cflag=1).
-3. Remaining self-contained fluid models: PHATDISK (+ INTERP emissivity),
-   TOY, HOTSPOT, SCHNITTMAN. SARIAF is done. TOY uses uninitialized state
-   upstream (`bb`, stale `f%u` in `aleph`), so it can only be ported with
-   documented deterministic choices, not fixture-validated. NUMDISK,
-   HARM3D/HARMPI/IHARM/KORAL*/MB09/THICKDISK remain blocked on external
-   simulation dumps not shipped upstream.
+3. ~~Remaining self-contained fluid models~~ — all done (PHATDISK+INTERP,
+   TOY, HOTSPOT, SCHNITTMAN, SARIAF). NUMDISK, HARM3D/HARMPI/IHARM/
+   KORAL*/MB09/THICKDISK remain blocked on external simulation dumps not
+   shipped upstream.
 4. Remaining emissivities: BREMS, SYNCHTHBREMS, SYNCHTHAVNOABS, HYBRIDTH/PL/
    THPL, MAXJUTT/MAXCOMP (with calc_maxjutt/calc_maxcomp); INTERP/INTERPPOL
    need external tables.

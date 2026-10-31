@@ -66,7 +66,9 @@ Documented upstream quirks reproduced or resolved:
 | `POWERLAW` | `physics::models::powerlaw` | done | end-to-end 7.4e-4 (nrotype=1 circular camera validated here too) |
 | `SARIAF` | `physics::models::sariaf` | done | self-contained; fluid fixture 2.3e-6; end-to-end 4.1e-3 (upstream LSODA error on thick pixels, VALIDATION_PLAN §3.2) |
 | `PHATDISK` | `physics::models::phatdisk` | done (intended no-absorption) | table/vals/fluid fixtures exact (4.4e-22 / 1.2e-7 / 4.3e-18); INTERP end-to-end self-consistent. Two upstream defects documented in VALIDATION_PLAN §3.4 (unallocated optional-arg arrays, uninitialized absorption) |
-| `HOTSPOT`, `SCHNITTMAN`, `TOY` | — | pending | self-contained analytic, not yet ported |
+| `HOTSPOT` | `physics::models::hotspot` | done | fluid fixture 1.0e-7 (all four bl06 field models); POLSYNCHPL end-to-end 1.0e-3 |
+| `SCHNITTMAN` | `physics::models::schnittman` | done | fluid fixture 1.3e-8; delo end-to-end 3.0e-7 (lsoda-substitute under-resolves the sharp spot, VALIDATION_PLAN §3.5) |
+| `TOY` | `physics::models::toy` | done (documented aleph/bb choices) | toy_vals 1.6e-17, four-velocity 6.7e-17; upstream aleph/bb garbage (VALIDATION_PLAN §3.6), self-consistency end-to-end |
 | `NUMDISK` | — | blocked | requires external data files not shipped |
 | `HARM` | `physics::models::harm` | done | formatted dump reader, MKS→KS→BL transforms, LNRF velocities, 2D interpolation (single snapshot); fluid fixture 7.6e-6; end-to-end 4.8e-2 with the upstream integrator deviation documented in VALIDATION_PLAN §3.1 |
 | `HARM3D`, `HARMPI`, `IHARM`, `KORAL*`, `MB09`, `THICKDISK` | — | blocked | require simulation dumps not shipped with the upstream repository |
