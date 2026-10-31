@@ -31,6 +31,7 @@
 
 pub mod emissivity;
 pub mod fluid;
+pub mod maxwell;
 pub mod models;
 pub mod polsynch;
 pub mod polsynch_tables;

@@ -222,9 +222,13 @@ ported and validated against a dedicated Fortran fixture
 | SYNCHTHBREMS | 1.0e-16 |
 | SYNCHTHAVNOABS | 1.9e-16 |
 | HYBRIDTHPL / HYBRIDTH / HYBRIDPL | 2.0e-12 |
+| MAXJUTT / MAXCOMP (sel 6 and 0) | 1.1e-12 |
 
 All three HYBRID emissivities were also run end-to-end on the POWERLAW fluid
-against the upstream binary: 6.8e-4 each (the POWERLAW baseline).
+against the upstream binary: 6.8e-4 each (the POWERLAW baseline). MAXJUTT
+(6-weight ladder, delta=2) was also run end-to-end on POWERLAW: 6.6e-4,
+validating the `otherargs` plumbing through the driver and the CLI deck
+mapping (`nweights`/`delta`).
 
 **Single-precision-literal quirk (BREMS).** `brememisHEROIC` writes the
 proton mass as `1.67219e-24` (an `e`-exponent literal) and its fit

@@ -47,6 +47,8 @@ pub struct TraceOptions {
     pub hmax: f64,
     pub oatol: f64,
     pub ortol: f64,
+    /// upstream `epotherargs` (MAXJUTT/MAXCOMP decomposition arguments)
+    pub otherargs: Vec<f64>,
 }
 
 impl Default for TraceOptions {
@@ -59,6 +61,7 @@ impl Default for TraceOptions {
             thin: 1e-2,
             hmax: 0.1,
             oatol: 1e-8,
+            otherargs: Vec::new(),
             ortol: 1e-6,
         }
     }
@@ -84,6 +87,7 @@ pub fn trace_ray(
     let a = ray.a;
     let mut f = initialize_fluid_model(loaded, npts);
     let mut e = Emis::select(&opts.ename);
+    e.otherargs = opts.otherargs.clone();
     get_fluid_vars(loaded, &ray.x, &ray.k, a, &mut f);
     // comoving orthonormal frame
     let mut u = f.u.clone();

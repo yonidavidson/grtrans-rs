@@ -26,6 +26,15 @@ All 26 cargo test targets pass. The CLI reproduces THINDISK through the full
 file→pipeline→binary path (1.1e-7); the PyO3 wheel builds with maturin and
 reproduces THINDISK (1.1e-7).
 
+## Milestone: MAXJUTT/MAXCOMP (2026-10-31)
+
+* Ported the Maxwell-Jüttner/Compton decompositions (`physics::maxwell`):
+  weighted polsynchth temperature ladders, including the MAXCOMP
+  single-Maxwellian selection. `test_maxwell` fixture 1.1e-12 for all cases.
+* Plumbed `otherargs` through `TraceOptions` and the CLI deck mapping
+  (`nweights`/`delta` -> epotherargs). MAXJUTT end-to-end on POWERLAW
+  (delta=2, 6 weights) matches upstream at 6.6e-4.
+
 ## Milestone: six emissivities + HYBRID end-to-end (2026-10-25)
 
 * Ported BREMS, SYNCHTHBREMS, SYNCHTHAVNOABS and HYBRIDTH/HYBRIDPL/HYBRIDTHPL

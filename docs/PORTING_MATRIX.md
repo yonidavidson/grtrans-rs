@@ -51,7 +51,7 @@ Documented upstream quirks reproduced or resolved:
 | `rotate_emis`, `invariant_emis` | `physics::emissivity` | done | |
 | `brememisHEROIC` (BREMS), SYNCHTHBREMS, SYNCHTHAVNOABS | `physics::polsynch::brememis_heroic`, `physics::emissivity` | done | `test_emis_extra` fixture: BREMS bit-exact, SYNCHTHBREMS 1.0e-16, NOABS 1.9e-16. Upstream single-precision-literal quirk reproduced (see VALIDATION_PLAN §3.3) |
 | HYBRIDTH / HYBRIDPL / HYBRIDTHPL | `physics::emissivity` | done | compositions of polsynchth/polsynchpl; `test_emis_extra` ≤2.0e-12 + POWERLAW end-to-end 6.8e-4 for all three |
-| MAXJUTT / MAXCOMP (`calc_maxjutt.f90`, `calc_maxcomp.f90`) | — | pending | self-contained, not yet ported |
+| MAXJUTT / MAXCOMP (`calc_maxjutt.f90`, `calc_maxcomp.f90`) | `physics::maxwell` | done | weighted polsynchth ladder; `test_maxwell` fixture 1.1e-12 (incl. MAXCOMP selection) + MAXJUTT end-to-end on POWERLAW 6.6e-4 (delta=2, 6 weights) |
 | `INTERP`/`INTERPPOL` (`interpemis_noabs`) | — | pending | needs the PHATDISK fnu table / external tables |
 
 ## Fluid models

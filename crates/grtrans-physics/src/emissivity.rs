@@ -5,6 +5,7 @@
 //! models (BB/FBB/BBPOL), and the frame rotations/scalings applied by the
 //! driver.
 
+use crate::maxwell::{calc_maxcomp, calc_maxjutt};
 use crate::polsynch::{bnu, brememis_heroic, polsynchpl, polsynchth, synchemis, synchpl};
 use grtrans_core::chandra::interp_chandra_tab24_f32;
 
@@ -26,6 +27,8 @@ pub mod etype {
     pub const EBREMS: i32 = 16;
     pub const ESYNCHTHBREMS: i32 = 17;
     pub const ESYNCHTHAVNOABS: i32 = 18;
+    pub const EMAXJUTT: i32 = 19;
+    pub const EMAXCOMP: i32 = 20;
 }
 
 /// Upstream `emis_params`.
@@ -59,6 +62,8 @@ pub struct Emis {
     pub fcol: f64,
     pub p: Vec<f64>,
     pub gmax: f64,
+    /// upstream `ep%otherargs` (MAXJUTT/MAXCOMP decomposition arguments)
+    pub otherargs: Vec<f64>,
 }
 
 impl Emis {
@@ -82,6 +87,7 @@ impl Emis {
             fcol: 1.8,
             p: Vec::new(),
             gmax: 1e5,
+            otherargs: Vec::new(),
         };
         e.type_ = match ename {
             "POLSYNCHTH" => etype::EPOLSYNCHTH,
@@ -94,6 +100,8 @@ impl Emis {
             "BREMS" => etype::EBREMS,
             "SYNCHTHBREMS" => etype::ESYNCHTHBREMS,
             "SYNCHTHAVNOABS" => etype::ESYNCHTHAVNOABS,
+            "MAXJUTT" => etype::EMAXJUTT,
+            "MAXCOMP" => etype::EMAXCOMP,
             "lambda" => etype::ELAMBDA,
             "BB" => etype::EBB,
             "FBB" => etype::EFBB,
@@ -112,7 +120,9 @@ impl Emis {
             | etype::EBBPOL
             | etype::EHYBRIDTH
             | etype::EHYBRIDPL
-            | etype::EHYBRIDTHPL => 4,
+            | etype::EHYBRIDTHPL
+            | etype::EMAXJUTT
+            | etype::EMAXCOMP => 4,
             _ => 1,
         };
         e.nk = 1 + e.neq * (e.neq - 1) / 2;
@@ -151,6 +161,11 @@ impl Emis {
                 self.ncgs = vec![0.0; npts];
                 self.tcgs = vec![0.0; npts];
             }
+            etype::EMAXJUTT | etype::EMAXCOMP => {
+                self.ncgs = vec![0.0; npts];
+                self.tcgs = vec![0.0; npts];
+                self.bcgs = vec![0.0; npts];
+            }
             etype::EHYBRIDTHPL | etype::EHYBRIDTH | etype::EHYBRIDPL => {
                 self.ncgs = vec![0.0; npts];
                 self.tcgs = vec![0.0; npts];
@@ -188,6 +203,11 @@ impl Emis {
             }
             etype::EBREMS => {
                 self.ncgs = ncgs.to_vec();
+                self.tcgs = tcgs.to_vec();
+            }
+            etype::EMAXJUTT | etype::EMAXCOMP => {
+                self.ncgs = ncgs.to_vec();
+                self.bcgs = bcgs.to_vec();
                 self.tcgs = tcgs.to_vec();
             }
             etype::EHYBRIDTHPL | etype::EHYBRIDTH | etype::EHYBRIDPL => {
@@ -354,6 +374,32 @@ impl Emis {
                             }
                         };
                     }
+                }
+            }
+            etype::EMAXJUTT => {
+                let out = calc_maxjutt(
+                    nu,
+                    &self.ncgs,
+                    &self.bcgs,
+                    &self.tcgs,
+                    &self.incang,
+                    &self.otherargs,
+                );
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
+            etype::EMAXCOMP => {
+                let out = calc_maxcomp(
+                    nu,
+                    &self.ncgs,
+                    &self.bcgs,
+                    &self.tcgs,
+                    &self.incang,
+                    &self.otherargs,
+                );
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
                 }
             }
             _ => {

@@ -93,11 +93,22 @@ pub fn run(inp: &Inputs) -> Vec<Image> {
     let freq_grid = freqs(inp);
     let mdot_grid = mdots(inp);
     let mu_grid = mus(inp);
+    // upstream read_inputs: epotherargs = [delta, weights...] (one weight
+    // when nweights==1, else the six defaults).
+    let mut otherargs = vec![inp.delta];
+    if inp.nweights == 1 {
+        otherargs.push(1.0);
+    } else {
+        otherargs.extend_from_slice(&[
+            0.10714295, 0.4459917, 1.34219997, 2.17450422, 1.36515333, 0.52892829,
+        ]);
+    }
     let opts = TraceOptions {
         ename: inp.ename.clone(),
         iname: inp.iname.clone(),
         nvals,
         freqs: freq_grid.clone(),
+        otherargs,
         ..Default::default()
     };
 
