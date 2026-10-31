@@ -47,9 +47,12 @@ Documented upstream quirks reproduced or resolved:
 | `polsynchemis.f90` `polsynchpl` | `physics::polsynch` | done | matches Fortran to all printed digits on the fixture grid |
 | `polsynchemis.f90` `synchpl` | `physics::polsynch` | done | columns 1/5 compared (others uninitialized upstream) |
 | `bnu` | `physics::polsynch::bnu` | done | |
-| `polsynchemis.f90` `polsynchth` (thermal) | `physics::polsynch` | pending | needed for HARM |
+| `polsynchemis.f90` `polsynchth` (thermal) | `physics::polsynch` | done | validated via the polsynch fixture and HARM/POWERLAW end-to-end |
 | `rotate_emis`, `invariant_emis` | `physics::emissivity` | done | |
-| `INTERP`/`INTERPPOL`, hybrids, MAXJUTT/MAXCOMP, BREMS | — | blocked | table data not shipped; documented |
+| `brememisHEROIC` (BREMS), SYNCHTHBREMS, SYNCHTHAVNOABS | `physics::polsynch::brememis_heroic`, `physics::emissivity` | done | `test_emis_extra` fixture: BREMS bit-exact, SYNCHTHBREMS 1.0e-16, NOABS 1.9e-16. Upstream single-precision-literal quirk reproduced (see VALIDATION_PLAN §3.3) |
+| HYBRIDTH / HYBRIDPL / HYBRIDTHPL | `physics::emissivity` | done | compositions of polsynchth/polsynchpl; `test_emis_extra` ≤2.0e-12 + POWERLAW end-to-end 6.8e-4 for all three |
+| MAXJUTT / MAXCOMP (`calc_maxjutt.f90`, `calc_maxcomp.f90`) | — | pending | self-contained, not yet ported |
+| `INTERP`/`INTERPPOL` (`interpemis_noabs`) | — | pending | needs the PHATDISK fnu table / external tables |
 
 ## Fluid models
 

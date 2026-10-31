@@ -425,3 +425,65 @@ pub fn synchemis(nu: &[f64], n: &[f64], b: &[f64], t: &[f64]) -> Vec<[f64; 11]> 
     }
     out
 }
+
+/// Upstream `brememisHEROIC` (emis.f90): thermal bremsstrahlung emission and
+/// absorption using the HEROIC relativistic fits. Only the intensity (col 0)
+/// and absorption (col 4) are set; the polarized columns stay zero (upstream
+/// leaves them unassigned, so BREMS is only well-defined for `neq==1`; we
+/// zero them deterministically).
+///
+/// Reproduced upstream quirk: the proton mass is written `1.67219e-24` (an
+/// `e`-exponent literal) and the fit coefficients are bare decimals
+/// (`1.016`, `1.781`, ...), i.e. *single-precision* literals in Fortran.
+/// They are rounded to f32 before being widened into the f64 expressions.
+/// Using f32 literals here reproduces the upstream fixture bit-for-bit;
+/// plain f64 literals differ by a systematic ~1.2e-7 (dominated by rho^2).
+pub fn brememis_heroic(nu: &[f64], ne: &[f64], t: &[f64]) -> Vec<[f64; 11]> {
+    let np = nu.len();
+    let mut out = vec![[0.0f64; 11]; np];
+    let epsilon = 1e-32;
+    // single-precision literals (see the doc comment)
+    let mp = 1.67219e-24f32 as f64;
+    let (c1016, c1781, c134) = (1.016f32 as f64, 1.781f32 as f64, 1.34f32 as f64);
+    let (c11, c125) = (1.1f32 as f64, 1.25f32 as f64);
+    let (c1432, c1123, c048, c15) = (
+        1.432f32 as f64,
+        1.123f32 as f64,
+        0.48f32 as f64,
+        1.5f32 as f64,
+    );
+    let (c1328, c128) = (1.328f32 as f64, 1.28f32 as f64);
+    for i in 0..np {
+        let temp = t[i];
+        let rho = ne[i] * mp;
+        let sqrtt = temp.sqrt();
+        let thetae = K * temp / ME / C2;
+        let sqrtthetae = thetae.sqrt();
+        let tempfactor = 1.0 / (sqrtt + (1e5 / temp).powi(10)) + epsilon;
+        let arg = H * nu[i] / (K * temp);
+        let (fei, fee) = if thetae < 1.0 {
+            (
+                c1016 * sqrtthetae * (1.0 + c1781 * thetae.powf(c134)),
+                thetae
+                    * sqrtthetae
+                    * (1.0 + c11 * thetae + thetae * thetae * (1.0 - c125 * sqrtthetae)),
+            )
+        } else {
+            (
+                c1432 * thetae * ((c1123 * thetae + c048).ln() + c15),
+                c1328 * thetae * ((c1123 * thetae).ln() + c128),
+            )
+        };
+        let anu = if arg > 100.0 {
+            0.0
+        } else {
+            let x = if arg < 1e-8 { arg } else { 1.0 - (-arg).exp() };
+            (1.10e61 / sqrtt) * rho * rho * fei * x * tempfactor / nu[i].powi(3)
+                + (1.14e51 / sqrtt / temp) * rho * rho * fee * x * tempfactor / nu[i].powi(2)
+        };
+        let jnu = anu * bnu(&[temp], nu[i])[0];
+        out[i][0] = jnu;
+        out[i][4] = anu;
+    }
+    out
+}

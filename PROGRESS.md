@@ -26,6 +26,20 @@ All 26 cargo test targets pass. The CLI reproduces THINDISK through the full
 file→pipeline→binary path (1.1e-7); the PyO3 wheel builds with maturin and
 reproduces THINDISK (1.1e-7).
 
+## Milestone: six emissivities + HYBRID end-to-end (2026-10-25)
+
+* Ported BREMS, SYNCHTHBREMS, SYNCHTHAVNOABS and HYBRIDTH/HYBRIDPL/HYBRIDTHPL
+  (the hybrids are compositions of the already-validated polsynchth/pl).
+  `test_emis_extra` fixture: BREMS bit-exact, others <=2e-12; all three
+  hybrids also validated end-to-end on POWERLAW (6.8e-4 each).
+* Root-caused a systematic ~1.2e-7 BREMS offset to upstream's
+  single-precision literals (proton mass `1.67219e-24` and bare fit
+  coefficients are f32 in Fortran). Casting them to f32 first reproduces the
+  fixture bit-for-bit (VALIDATION_PLAN §3.3).
+* Note: `SourceParams::default()` gives p1=0/gmax=0, which is invalid for
+  powerlaw emission (pathological K, very slow stiff substepping). Tests that
+  use powerlaw emissivities must set p1/p2/gmax explicitly (as FFJET does).
+
 ## Milestone: FITS output (2026-10-24)
 
 * Implemented `grtrans::fits::write_fits` (no cfitsio dependency): primary

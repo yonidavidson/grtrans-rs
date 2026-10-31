@@ -5,7 +5,7 @@
 //! models (BB/FBB/BBPOL), and the frame rotations/scalings applied by the
 //! driver.
 
-use crate::polsynch::{bnu, polsynchpl, polsynchth, synchemis, synchpl};
+use crate::polsynch::{bnu, brememis_heroic, polsynchpl, polsynchth, synchemis, synchpl};
 use grtrans_core::chandra::interp_chandra_tab24_f32;
 
 /// Upstream emissivity type constants (`emis.f90` lines 10-17).
@@ -23,6 +23,9 @@ pub mod etype {
     pub const EHYBRIDTH: i32 = 13;
     pub const EHYBRIDPL: i32 = 14;
     pub const EHYBRIDTHPL: i32 = 15;
+    pub const EBREMS: i32 = 16;
+    pub const ESYNCHTHBREMS: i32 = 17;
+    pub const ESYNCHTHAVNOABS: i32 = 18;
 }
 
 /// Upstream `emis_params`.
@@ -88,6 +91,9 @@ impl Emis {
             "HYBRIDTH" => etype::EHYBRIDTH,
             "HYBRIDPL" => etype::EHYBRIDPL,
             "HYBRIDTHPL" => etype::EHYBRIDTHPL,
+            "BREMS" => etype::EBREMS,
+            "SYNCHTHBREMS" => etype::ESYNCHTHBREMS,
+            "SYNCHTHAVNOABS" => etype::ESYNCHTHAVNOABS,
             "lambda" => etype::ELAMBDA,
             "BB" => etype::EBB,
             "FBB" => etype::EFBB,
@@ -136,6 +142,22 @@ impl Emis {
                 self.tcgs = vec![0.0; npts];
                 self.bcgs = vec![0.0; npts];
             }
+            etype::ESYNCHTHBREMS | etype::ESYNCHTHAVNOABS => {
+                self.ncgs = vec![0.0; npts];
+                self.tcgs = vec![0.0; npts];
+                self.bcgs = vec![0.0; npts];
+            }
+            etype::EBREMS => {
+                self.ncgs = vec![0.0; npts];
+                self.tcgs = vec![0.0; npts];
+            }
+            etype::EHYBRIDTHPL | etype::EHYBRIDTH | etype::EHYBRIDPL => {
+                self.ncgs = vec![0.0; npts];
+                self.tcgs = vec![0.0; npts];
+                self.bcgs = vec![0.0; npts];
+                self.ncgsnth = vec![0.0; npts];
+                self.p = vec![0.0; npts];
+            }
             _ => {}
         }
     }
@@ -156,6 +178,21 @@ impl Emis {
             }
             etype::EPOLSYNCHTH | etype::ESYNCHTHAV => {
                 self.ncgs = ncgs.to_vec();
+                self.bcgs = bcgs.to_vec();
+                self.tcgs = tcgs.to_vec();
+            }
+            etype::ESYNCHTHBREMS | etype::ESYNCHTHAVNOABS => {
+                self.ncgs = ncgs.to_vec();
+                self.bcgs = bcgs.to_vec();
+                self.tcgs = tcgs.to_vec();
+            }
+            etype::EBREMS => {
+                self.ncgs = ncgs.to_vec();
+                self.tcgs = tcgs.to_vec();
+            }
+            etype::EHYBRIDTHPL | etype::EHYBRIDTH | etype::EHYBRIDPL => {
+                self.ncgs = ncgs.to_vec();
+                self.ncgsnth = ncgsnth.to_vec();
                 self.bcgs = bcgs.to_vec();
                 self.tcgs = tcgs.to_vec();
             }
@@ -255,6 +292,68 @@ impl Emis {
                 );
                 for (i, row) in out.iter().enumerate() {
                     kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
+            etype::ESYNCHTHAVNOABS => {
+                // synchemisnoabs: synchemis then zero the absorption columns
+                let mut out = synchemis(nu, &self.ncgs, &self.bcgs, &self.tcgs);
+                for row in out.iter_mut() {
+                    for c in 4..11 {
+                        row[c] = 0.0;
+                    }
+                }
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
+            etype::EBREMS => {
+                let out = brememis_heroic(nu, &self.ncgs, &self.tcgs);
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
+            etype::ESYNCHTHBREMS => {
+                let a = synchemis(nu, &self.ncgs, &self.bcgs, &self.tcgs);
+                let b = brememis_heroic(nu, &self.ncgs, &self.tcgs);
+                for i in 0..npts {
+                    for c in 0..11 {
+                        kb[i * 11 + c] = a[i][c] + b[i][c];
+                    }
+                }
+            }
+            etype::EHYBRIDTHPL | etype::EHYBRIDTH | etype::EHYBRIDPL => {
+                let kth = polsynchth(nu, &self.ncgs, &self.bcgs, &self.tcgs, &self.incang);
+                let kpl = polsynchpl(
+                    nu,
+                    &self.ncgsnth,
+                    &self.bcgs,
+                    &self.incang,
+                    &self.p,
+                    &self.gmin,
+                    self.gmax,
+                );
+                for i in 0..npts {
+                    for c in 0..11 {
+                        let sum = kth[i][c] + kpl[i][c];
+                        // cols 0-3 = emission, cols 4-10 = absorption
+                        kb[i * 11 + c] = match self.type_ {
+                            etype::EHYBRIDTHPL => sum,
+                            etype::EHYBRIDTH => {
+                                if c < 4 {
+                                    kth[i][c]
+                                } else {
+                                    sum
+                                }
+                            }
+                            _ => {
+                                if c < 4 {
+                                    kpl[i][c]
+                                } else {
+                                    sum
+                                }
+                            }
+                        };
+                    }
                 }
             }
             _ => {

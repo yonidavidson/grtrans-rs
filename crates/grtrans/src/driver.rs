@@ -122,6 +122,9 @@ pub fn trace_ray(
     // emis_model for the power-law synchrotron
     if e.type_ == grtrans_physics::emissivity::etype::EPOLSYNCHPL
         || e.type_ == grtrans_physics::emissivity::etype::ESYNCHPL
+        || e.type_ == grtrans_physics::emissivity::etype::EHYBRIDTHPL
+        || e.type_ == grtrans_physics::emissivity::etype::EHYBRIDTH
+        || e.type_ == grtrans_physics::emissivity::etype::EHYBRIDPL
     {
         let mut gmin = sp.gmin.clone();
         if gmin.len() < npts {

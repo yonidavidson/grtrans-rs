@@ -208,3 +208,30 @@ LSODA is 20.7% low. Hence on these stiff pixels the port computes the exact
 solution and the residual against the reference is upstream's own solver
 error (same class as §3.1). The test asserts agreement with the exact
 solution, not with LSODA's error.
+
+## 3.3 Emissivity additions and the single-precision-literal quirk
+
+BREMS, SYNCHTHBREMS, SYNCHTHAVNOABS and the three HYBRID emissivities were
+ported and validated against a dedicated Fortran fixture
+(`reference/fortran/test_emis_extra.f90`, 12-point grid spanning both
+`thetae` branches):
+
+| case | relative error |
+| --- | --- |
+| BREMS | **0.0** (bit-exact) |
+| SYNCHTHBREMS | 1.0e-16 |
+| SYNCHTHAVNOABS | 1.9e-16 |
+| HYBRIDTHPL / HYBRIDTH / HYBRIDPL | 2.0e-12 |
+
+All three HYBRID emissivities were also run end-to-end on the POWERLAW fluid
+against the upstream binary: 6.8e-4 each (the POWERLAW baseline).
+
+**Single-precision-literal quirk (BREMS).** `brememisHEROIC` writes the
+proton mass as `1.67219e-24` (an `e`-exponent literal) and its fit
+coefficients as bare decimals (`1.016`, `1.781`, ...). In Fortran these are
+*single-precision* literals: they are rounded to f32 before being widened
+into the f64 expressions. Porting them as f64 literals produced a systematic
+~1.2e-7 relative offset (dominated by `rho^2`). Casting them to f32 first
+(`1.67219e-24f32 as f64`, etc.) reproduces the upstream fixture **bit-for-bit**.
+This is a general hazard when transliterating Fortran numeric literals: only
+`d`-exponent literals and integer-valued constants are safely double.
