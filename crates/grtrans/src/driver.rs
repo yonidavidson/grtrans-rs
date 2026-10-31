@@ -123,6 +123,11 @@ pub fn trace_ray(
     // assign_emis_params (all ported types)
     e.assign_params(&tcgs);
     e.assign_synch_params(&ncgs, &ncgsnth, &bcgs, &tcgs);
+    if e.type_ == grtrans_physics::emissivity::etype::EINTERP {
+        // PHATDISK supplies the per-point flux table and frequency grid
+        e.fnu = f.fnu.iter().map(|v| *v as f64).collect();
+        e.freqarr = f.freq_tab.iter().map(|v| *v as f64).collect();
+    }
     // emis_model for the power-law synchrotron
     if e.type_ == grtrans_physics::emissivity::etype::EPOLSYNCHPL
         || e.type_ == grtrans_physics::emissivity::etype::ESYNCHPL

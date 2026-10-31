@@ -26,6 +26,21 @@ All 26 cargo test targets pass. The CLI reproduces THINDISK through the full
 file→pipeline→binary path (1.1e-7); the PyO3 wheel builds with maturin and
 reproduces THINDISK (1.1e-7).
 
+## Milestone: PHATDISK + INTERP (2026-10-31)
+
+* Ported PHATDISK (Novikov-Thorne multicolor thin disk) and the INTERP
+  emissivity: flux-table build, `phatdisk_vals`, Keplerian fluid velocity,
+  and `interpemis_noabs` (including its f32 interpolation arithmetic).
+* Component fixtures: table 4.4e-22, vals 1.2e-7, fluid 4.3e-18, INTERP
+  bit-exact (below-grid clamped vs upstream OOB NaN).
+* Found two upstream defects (VALIDATION_PLAN §3.4): the optional-args
+  `init_phatdisk` path leaves the table arrays unallocated (segfault), and
+  `interpemis_noabs` leaves the absorption columns uninitialized (garbage
+  optically-thick image). Upstream's PHATDISK output is therefore not a
+  valid reference; we implement the intended no-absorption behavior and use
+  a self-consistency end-to-end check. A local upstream patch (namelist-file
+  path + thindisk state from fargs) was used to generate/inspect runs.
+
 ## Milestone: MAXJUTT/MAXCOMP (2026-10-31)
 
 * Ported the Maxwell-Jüttner/Compton decompositions (`physics::maxwell`):

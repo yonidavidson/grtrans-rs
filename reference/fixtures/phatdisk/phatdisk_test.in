@@ -1,0 +1,8 @@
+&phatdisk
+ nw=500, wmin=0.0001, wmax=10000.0, nfreq_tab=100, fmin=10000000000.0,
+ fmax=1000000000000000.0, rmax=10000.0, nr=500, sigt=0.4, fcol=1.7,
+/
+&thindisk
+ mbh=620000000.0,
+ mdot=1570000000000000.0,
+/

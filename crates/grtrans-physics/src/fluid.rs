@@ -11,6 +11,7 @@
 
 use crate::models::ffjet::{self, FfjetData};
 use crate::models::harm::{self, HarmData};
+use crate::models::phatdisk::{self, PhatdiskState};
 use crate::models::powerlaw::{self, PowerlawState};
 use crate::models::sariaf::{self, SariafState};
 use crate::models::sphacc;
@@ -172,6 +173,7 @@ pub enum ModelState {
     Powerlaw(PowerlawState),
     Harm(Arc<HarmData>),
     Sariaf(SariafState),
+    Phatdisk(Arc<PhatdiskState>),
 }
 
 /// Result of `load_fluid_model`: the model name and its persistent state.
@@ -198,6 +200,10 @@ pub struct Fluid {
     pub p: Vec<f32>,
     pub bmag: Vec<f32>,
     pub rho2: Vec<f32>,
+    /// per-point flux table for PHATDISK (point-major, freq-fastest)
+    pub fnu: Vec<f32>,
+    /// frequency grid for PHATDISK / INTERP
+    pub freq_tab: Vec<f32>,
     pub u: Vec<FourVector>,
     pub b: Vec<FourVector>,
     pub npts: usize,
@@ -218,6 +224,8 @@ impl Fluid {
             p: Vec::new(),
             bmag: Vec::new(),
             rho2: Vec::new(),
+            fnu: Vec::new(),
+            freq_tab: Vec::new(),
             u: Vec::new(),
             b: Vec::new(),
             npts: 0,
@@ -262,6 +270,9 @@ pub fn initialize_fluid_model(loaded: &LoadedFluid, nup: usize) -> Fluid {
             f.bmag = vec![0.0; nup];
             f.p = vec![0.0; nup];
             f.rho2 = vec![0.0; nup];
+        }
+        "PHATDISK" => {
+            f.model = model::PHATDISK;
         }
         _ => {
             f.model = model::DUMMY;
@@ -315,6 +326,30 @@ pub fn load_fluid_model(fname: &str, a: f64, args: &FluidArgs) -> LoadedFluid {
             LoadedFluid {
                 name: fname.to_string(),
                 state: ModelState::Sariaf(state),
+            }
+        }
+        "PHATDISK" => {
+            let thin = crate::models::thindisk::ThindiskState {
+                mbh: args.mbh as f32,
+                mdot: args.mdot as f32,
+                rin: args.rin as f32,
+                rout: args.rout as f32,
+            };
+            let mut state = PhatdiskState::new(thin);
+            state.nw = args.nw;
+            state.wmin = args.wmin as f32;
+            state.wmax = args.wmax as f32;
+            state.nfreq_tab = args.nfreq_tab;
+            state.fmin = args.fmin as f32;
+            state.fmax = args.fmax as f32;
+            state.rmax = args.rmax as f32;
+            state.nr = args.nr;
+            state.sigt = args.sigt as f32;
+            state.fcol = args.fcol as f32;
+            phatdisk::init_phatdisk(&mut state, a as f32);
+            LoadedFluid {
+                name: fname.to_string(),
+                state: ModelState::Phatdisk(Arc::new(state)),
             }
         }
         "POWERLAW" => {
@@ -386,6 +421,9 @@ pub fn get_fluid_vars(
         }
         (ModelState::Sariaf(state), model::SARIAF) => {
             sariaf::get_sariaf_fluidvars(state, x, a as f32, f);
+        }
+        (ModelState::Phatdisk(state), model::PHATDISK) => {
+            phatdisk::get_phatdisk_fluidvars(state, x, k, a as f32, f);
         }
         _ => {
             for v in f.u.iter_mut() {

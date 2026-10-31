@@ -239,3 +239,40 @@ into the f64 expressions. Porting them as f64 literals produced a systematic
 (`1.67219e-24f32 as f64`, etc.) reproduces the upstream fixture **bit-for-bit**.
 This is a general hazard when transliterating Fortran numeric literals: only
 `d`-exponent literals and integer-valued constants are safely double.
+
+## 3.4 PHATDISK + INTERP: component validation and two upstream defects
+
+PHATDISK (Novikov–Thorne multicolor thin disk) and the INTERP emissivity were
+ported and validated at the component level:
+
+| component | result |
+| --- | --- |
+| flux table / radius & frequency grids (`test_phatdisk_fluid`) | aggregate 4.4e-22 (max rel 3.4e-7) |
+| `phatdisk_vals` interpolation | aggregate 1.2e-7 |
+| Keplerian four-velocity (`get_phatdisk_fluidvars`) | aggregate 4.3e-18 |
+| `interpemis_noabs` (`test_interp`, in-grid/above-grid) | bit-exact (one point 5.4e-7) |
+
+Two upstream defects mean there is **no valid upstream end-to-end reference**:
+
+1. `load_fluid_model` calls `init_phatdisk` with the optional arguments. In
+   that path `w`, `freq_tab`, `r_tab`, `om_tab` and `fnu_tab` are **never
+   allocated** (they are only allocated in `read_phatdisk_inputs`, the
+   namelist-file path), so the stock binary segfaults (`logf` on an
+   unallocated array). A local patch runs the namelist-file path instead and
+   sets the thindisk `rin/rout` from `fargs` (they are otherwise
+   uninitialized, giving a degenerate zero-flux disk).
+2. `interpemis_noabs` sets only the emission column and leaves the
+   absorption columns of the K buffer **uninitialized**. The driver uses that
+   garbage as the absorption: the geodebug for one pixel shows K1 ~ 1e5-1e6
+   and tau ~ 1.5e8 (optically thick from garbage memory). The resulting
+   PHATDISK image therefore depends on uninitialized memory and is not a
+   meaningful reference.
+
+We implement the intended no-absorption behavior (K=0) and validate the
+components exactly (table above). The end-to-end test
+(`reference_phatdisk.rs`) is a self-consistency check (finite, non-negative,
+physically sensible image) rather than a comparison to the garbage upstream
+image. INTERP also uses single-precision interpolation arithmetic
+(`yix/xix/jslope/yy` are `real`), which we reproduce; below the frequency
+grid the upstream reads `freqarr(0)` out of bounds (NaN) and we clamp to the
+first segment instead (documented edge deviation).

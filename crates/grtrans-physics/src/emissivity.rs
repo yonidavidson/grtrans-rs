@@ -64,6 +64,10 @@ pub struct Emis {
     pub gmax: f64,
     /// upstream `ep%otherargs` (MAXJUTT/MAXCOMP decomposition arguments)
     pub otherargs: Vec<f64>,
+    /// per-point flux table for INTERP (point-major, freq-fastest)
+    pub fnu: Vec<f64>,
+    /// frequency grid for INTERP
+    pub freqarr: Vec<f64>,
 }
 
 impl Emis {
@@ -88,6 +92,8 @@ impl Emis {
             p: Vec::new(),
             gmax: 1e5,
             otherargs: Vec::new(),
+            fnu: Vec::new(),
+            freqarr: Vec::new(),
         };
         e.type_ = match ename {
             "POLSYNCHTH" => etype::EPOLSYNCHTH,
@@ -402,6 +408,12 @@ impl Emis {
                     kb[i * 11..i * 11 + 11].copy_from_slice(row);
                 }
             }
+            etype::EINTERP => {
+                let out = interpemis_noabs(nu, &self.freqarr, &self.fnu);
+                for (i, row) in out.iter().enumerate() {
+                    kb[i * 11..i * 11 + 11].copy_from_slice(row);
+                }
+            }
             _ => {
                 panic!(
                     "calc_emissivity: emissivity type {} not yet ported",
@@ -483,4 +495,54 @@ pub fn assign_emis_params(e: &mut Emis, tcgs: &[f64]) {
 /// Upstream `calc_emissivity`.
 pub fn calc_emissivity(nu: &[f64], e: &mut Emis, _ep: &EmisParams) {
     e.calc_emissivity(nu);
+}
+
+/// Upstream `interpemis_noabs` (emis.f90): log-log interpolate the per-point
+/// flux table (`jnu`, point-major/freq-fastest) at each emitted frequency
+/// `nu[i]`, returning the emissivity in column 0 (no absorption).
+///
+/// Documented edge deviation: for `nu` below the table grid the upstream
+/// index becomes 0 and reads out of bounds (undefined); we clamp to the
+/// first segment instead. Above the grid both use the last segment.
+pub fn interpemis_noabs(nu: &[f64], freqarr: &[f64], jnu: &[f64]) -> Vec<[f64; 11]> {
+    let nf = freqarr.len();
+    let np = nu.len();
+    let mut out = vec![[0.0f64; 11]; np];
+    let logj: Vec<f64> = jnu
+        .iter()
+        .map(|v| if *v > 0.0 { v.ln() } else { -500.0 })
+        .collect();
+    if nf < 2 {
+        for (i, row) in out.iter_mut().enumerate() {
+            row[0] = jnu[i * nf];
+        }
+        return out;
+    }
+    let l0 = freqarr[0].ln();
+    let ln1 = freqarr[nf - 1].ln();
+    for (i, row) in out.iter_mut().enumerate() {
+        let x = nu[i].ln();
+        let mut iff = ((x - l0) / (ln1 - l0) * ((nf - 1) as f64)).floor() as i32 + 1;
+        // upstream merge(merge(iff,0,iff>0),nf-1,iff<(nf-1)), then clamp to a
+        // valid segment (see the doc comment for the low-frequency deviation)
+        iff = if iff < (nf - 1) as i32 {
+            iff.max(0)
+        } else {
+            (nf - 1) as i32
+        };
+        iff = iff.clamp(1, (nf - 1) as i32);
+        let (i0, i1) = ((iff - 1) as usize, iff as usize);
+        // upstream computes yix/xix/jslope/yy and exp in SINGLE precision
+        // (`real`, not `real(8)`); logj and the frequency logs are f64 and are
+        // narrowed on assignment.
+        let yix = logj[i * nf + i0] as f32;
+        let yix1 = logj[i * nf + i1] as f32;
+        let xix = freqarr[i0].ln() as f32;
+        let xix1 = freqarr[i1].ln() as f32;
+        let xx = x as f32;
+        let jslope = (yix1 - yix) / (xix1 - xix);
+        let yy = yix + jslope * (xx - xix);
+        row[0] = yy.exp() as f64;
+    }
+    out
 }

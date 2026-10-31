@@ -52,7 +52,7 @@ Documented upstream quirks reproduced or resolved:
 | `brememisHEROIC` (BREMS), SYNCHTHBREMS, SYNCHTHAVNOABS | `physics::polsynch::brememis_heroic`, `physics::emissivity` | done | `test_emis_extra` fixture: BREMS bit-exact, SYNCHTHBREMS 1.0e-16, NOABS 1.9e-16. Upstream single-precision-literal quirk reproduced (see VALIDATION_PLAN §3.3) |
 | HYBRIDTH / HYBRIDPL / HYBRIDTHPL | `physics::emissivity` | done | compositions of polsynchth/polsynchpl; `test_emis_extra` ≤2.0e-12 + POWERLAW end-to-end 6.8e-4 for all three |
 | MAXJUTT / MAXCOMP (`calc_maxjutt.f90`, `calc_maxcomp.f90`) | `physics::maxwell` | done | weighted polsynchth ladder; `test_maxwell` fixture 1.1e-12 (incl. MAXCOMP selection) + MAXJUTT end-to-end on POWERLAW 6.6e-4 (delta=2, 6 weights) |
-| `INTERP`/`INTERPPOL` (`interpemis_noabs`) | — | pending | needs the PHATDISK fnu table / external tables |
+| `INTERP` (`interpemis_noabs`) | `physics::emissivity::interpemis_noabs` | done | log-log interpolation incl. the f32 arithmetic; `test_interp` bit-exact; below-grid clamped (upstream OOB NaN). INTERPPOL needs external tables (blocked) |
 
 ## Fluid models
 
@@ -65,7 +65,8 @@ Documented upstream quirks reproduced or resolved:
 | `SPHACC` | `physics::models::sphacc` | done | end-to-end image 6.3e-4 / spectrum 5.2e-4 |
 | `POWERLAW` | `physics::models::powerlaw` | done | end-to-end 7.4e-4 (nrotype=1 circular camera validated here too) |
 | `SARIAF` | `physics::models::sariaf` | done | self-contained; fluid fixture 2.3e-6; end-to-end 4.1e-3 (upstream LSODA error on thick pixels, VALIDATION_PLAN §3.2) |
-| `PHATDISK`, `HOTSPOT`, `SCHNITTMAN`, `TOY` | — | pending | self-contained analytic, not yet ported |
+| `PHATDISK` | `physics::models::phatdisk` | done (intended no-absorption) | table/vals/fluid fixtures exact (4.4e-22 / 1.2e-7 / 4.3e-18); INTERP end-to-end self-consistent. Two upstream defects documented in VALIDATION_PLAN §3.4 (unallocated optional-arg arrays, uninitialized absorption) |
+| `HOTSPOT`, `SCHNITTMAN`, `TOY` | — | pending | self-contained analytic, not yet ported |
 | `NUMDISK` | — | blocked | requires external data files not shipped |
 | `HARM` | `physics::models::harm` | done | formatted dump reader, MKS→KS→BL transforms, LNRF velocities, 2D interpolation (single snapshot); fluid fixture 7.6e-6; end-to-end 4.8e-2 with the upstream integrator deviation documented in VALIDATION_PLAN §3.1 |
 | `HARM3D`, `HARMPI`, `IHARM`, `KORAL*`, `MB09`, `THICKDISK` | — | blocked | require simulation dumps not shipped with the upstream repository |
