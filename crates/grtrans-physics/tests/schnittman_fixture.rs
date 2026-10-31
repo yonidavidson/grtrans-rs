@@ -1,3 +1,5 @@
+#![allow(clippy::approx_constant)]
+
 //! SCHNITTMAN hot-spot fluid model validated against the upstream
 //! `schnittman_hotspot_vals` / `get_schnittman_hotspot_fluidvars`.
 

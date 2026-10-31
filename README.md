@@ -5,11 +5,17 @@ transfer code by [Jason Dexter](https://github.com/jadexter/grtrans)
 ([Dexter 2016](https://ui.adsabs.harvard.edu/abs/2016MNRAS.462..115D),
 [Dexter & Agol 2009](https://ui.adsabs.harvard.edu/abs/2009ApJ...696.1616D)).
 
-**Status: all five upstream regression problems are ported; four reproduce
-the reference results far inside the upstream tolerances, and HARM matches
-its reference to 4.8e-2 with the residual traced to a measured upstream
-integrator deviation on spiky GRMHD data (see `docs/VALIDATION_PLAN.md`
-§3.1).** See `docs/PORTING_MATRIX.md` for the per-module state.
+**Status: all five upstream regression problems are ported and validated,
+and every self-contained fluid model and emissivity is now ported**
+(THINDISK, FFJET, SPHACC, POWERLAW, HARM, SARIAF, PHATDISK, HOTSPOT,
+SCHNITTMAN, TOY; BB/FBB/BBPOL/lambda, POLSYNCHPL/SYNCHPL,
+POLSYNCHTH/SYNCHTHAV, BREMS/SYNCHTHBREMS/SYNCHTHAVNOABS, the HYBRID
+compositions, MAXJUTT/MAXCOMP and INTERP). FITS output is implemented and
+validated against the upstream reader. HARM matches its reference to 4.8e-2
+with the residual traced to a measured upstream integrator deviation on
+spiky GRMHD data (`docs/VALIDATION_PLAN.md` §3.1). See
+`docs/PORTING_MATRIX.md` for the per-module state and the remaining
+external-data / experimental blockers.
 
 ## What GRTRANS computes
 

@@ -3,6 +3,37 @@
 This file records the state of the port, what is validated, and the exact
 next steps. It is updated at each milestone.
 
+## Coverage summary (2026-10-31)
+
+Self-contained coverage is complete:
+
+* **Fluid models (all ported + validated):** THINDISK, FFJET, SPHACC,
+  POWERLAW, HARM, SARIAF, PHATDISK, HOTSPOT, SCHNITTMAN, TOY.
+* **Emissivities (all self-contained, ported + validated):** BB, FBB, BBPOL,
+  lambda, POLSYNCHPL, SYNCHPL, POLSYNCHTH, SYNCHTHAV, BREMS, SYNCHTHBREMS,
+  SYNCHTHAVNOABS, HYBRIDTH/HYBRIDPL/HYBRIDTHPL, MAXJUTT, MAXCOMP, INTERP.
+* **I/O:** plain binary and FITS output (validated against upstream data and
+  the upstream Python reader).
+* **Python bindings:** build and reproduce THINDISK at 1.1e-7.
+
+Remaining blocked / open items:
+
+* External simulation dumps (HARM3D, HARMPI, IHARM, KORAL*, MB09, THICKDISK,
+  NUMDISK) — data files not shipped upstream.
+* INTERPPOL — needs external emissivity tables.
+* `lsodasph` — experimental upstream ("in development").
+* Time-dependent fluid advance — needs multiple snapshot dumps (only
+  `dump040` is shipped).
+* Faithful ODEPACK LSODA port — open item; the current stiff-stable
+  exponential substitute is validated (matches the exact ODE solution to
+  3e-6 on thick pixels) but under-resolves very sharp emission cutoffs
+  (use delo/formal for those, VALIDATION_PLAN §3.5).
+* Documented upstream defects: PHATDISK uninitialized absorption (§3.4),
+  TOY stale aleph/unassigned bb (§3.6), schnittman unassigned convert
+  fields (§3.5), `radtrans_aux` one-index shift (reproduced, §3), f32
+  literals in BREMS (§3.3), output filenames padded with trailing blanks.
+
+
 ## Current state (see docs/VALIDATION_PLAN.md for evidence)
 
 Validated end-to-end against regenerated upstream fixtures (Fortran binary

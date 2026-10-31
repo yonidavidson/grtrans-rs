@@ -1,3 +1,5 @@
+#![allow(clippy::approx_constant)]
+
 //! HOTSPOT fluid model validated against the upstream `hotspot_vals` /
 //! `get_hotspot_fluidvars` for all four bl06 field models.
 
