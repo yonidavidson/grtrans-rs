@@ -17,7 +17,10 @@ fn main() {
     let (ifile, ofile) = inputs::read_files_in(&files_in);
     println!("grtrans-rs: ifile={ifile} ofile={ofile}");
     let inp = inputs::read_inputs(&PathBuf::from(&ifile));
-    let images = run::run(&inp);
+    let images = run::try_run(&inp).unwrap_or_else(|err| {
+        eprintln!("grtrans: {err}");
+        std::process::exit(1);
+    });
     if inp.cflag == 1 {
         fits::write_fits(&images, &inp, &PathBuf::from(&ofile)).expect("writing FITS output");
     } else {

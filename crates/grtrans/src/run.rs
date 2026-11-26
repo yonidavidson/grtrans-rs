@@ -6,7 +6,7 @@
 use crate::driver::{trace_ray, TraceOptions};
 use crate::inputs::{freqs, mdots, mus, Inputs};
 use grtrans_geodesics::rays::{initialize_geodesic, initialize_pixels, GeokerrArgs};
-use grtrans_physics::fluid::{load_fluid_model, FluidArgs, SourceParams};
+use grtrans_physics::fluid::{load_fluid_model, FluidArgs, ModelState, SourceParams};
 use rayon::prelude::*;
 use std::io::Write;
 use std::path::Path;
@@ -26,6 +26,11 @@ pub struct Image {
 
 /// Run the full pipeline described by `inputs`.
 pub fn run(inp: &Inputs) -> Vec<Image> {
+    try_run(inp).unwrap_or_else(|err| panic!("{err}"))
+}
+
+/// Run an image calculation, returning an input error for an unsupported fluid model.
+pub fn try_run(inp: &Inputs) -> Result<Vec<Image>, String> {
     let nro = inp.nn[0] as usize;
     let nphi = inp.nn[1] as usize;
     let nup = inp.nn[2] as usize;
@@ -89,6 +94,10 @@ pub fn run(inp: &Inputs) -> Vec<Image> {
         ..Default::default()
     };
     let mut loaded = load_fluid_model(&inp.fname, inp.spin, &fargs);
+
+    if matches!(loaded.state, ModelState::None) {
+        return Err(format!("unsupported fluid model fname={:?}", inp.fname));
+    }
 
     let freq_grid = freqs(inp);
     let mdot_grid = mdots(inp);
@@ -186,7 +195,7 @@ pub fn run(inp: &Inputs) -> Vec<Image> {
             }
         }
     }
-    images
+    Ok(images)
 }
 
 /// Write one image in the upstream plain-binary format

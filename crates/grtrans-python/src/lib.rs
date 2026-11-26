@@ -152,7 +152,9 @@ fn run_image<'py>(
     let empty = PyDict::new(py);
     let kw = kwargs.unwrap_or(&empty);
     let inp = inputs_from_kwargs(kw)?;
-    let images = py.detach(|| grtrans::run::run(&inp));
+    let images = py
+        .detach(|| grtrans::run::try_run(&inp))
+        .map_err(PyValueError::new_err)?;
     if images.is_empty() {
         return Err(PyValueError::new_err("no images produced"));
     }

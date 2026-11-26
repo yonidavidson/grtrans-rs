@@ -93,3 +93,59 @@ fn cli_thindisk_binary_output_matches_reference() {
     println!("CLI THINDISK relative error vs reference: {err:e}");
     assert!(err < 1e-2, "CLI THINDISK error {err:e}");
 }
+
+#[test]
+fn face_on_disk_has_local_polarization_but_cancels_across_the_image() {
+    let deck = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("../../reference/fixtures/thindisk/inputs.in");
+    let mut inputs = grtrans::inputs::read_inputs(&deck);
+    inputs.nfreq = 1;
+    inputs.mumin = 1.0;
+    inputs.mumax = 1.0;
+    let images = grtrans::run::run(&inputs);
+    assert_eq!(images.len(), 1);
+    let mut intensity = 0.0;
+    let mut q_sum = 0.0;
+    let mut u_sum = 0.0;
+    let mut polarized_intensity = 0.0;
+    for pixel in images[0].ivals.chunks_exact(4) {
+        let q = f64::from(pixel[1]);
+        let u = f64::from(pixel[2]);
+        intensity += f64::from(pixel[0]);
+        q_sum += q;
+        u_sum += u;
+        polarized_intensity += q.hypot(u);
+    }
+    assert!(intensity > 0.0);
+    assert!(polarized_intensity / intensity > 1e-3);
+    assert!(q_sum.hypot(u_sum) / intensity < 1e-7);
+}
+
+#[test]
+fn unsupported_fluid_model_exits_before_replacing_output() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../..");
+    let work = root
+        .join("target")
+        .join(format!("unsupported_fluid_{}", std::process::id()));
+    std::fs::create_dir_all(&work).unwrap();
+    let fixture = root.join("reference/fixtures/thindisk");
+    std::fs::copy(fixture.join("files.in"), work.join("files.in")).unwrap();
+    let template = std::fs::read_to_string(fixture.join("inputs.in")).unwrap();
+    std::fs::write(
+        work.join("inputs.in"),
+        template.replace("'THINDISK'", "'BOX'"),
+    )
+    .unwrap();
+    let output = work.join("grtrans.out");
+    std::fs::write(&output, b"previous result").unwrap();
+    let result = std::process::Command::new(env!("CARGO_BIN_EXE_grtrans"))
+        .current_dir(&work)
+        .output()
+        .unwrap();
+    assert!(!result.status.success());
+    assert!(
+        String::from_utf8_lossy(&result.stderr).contains("unsupported fluid model fname=\"BOX\"")
+    );
+    assert_eq!(std::fs::read(output).unwrap(), b"previous result");
+    std::fs::remove_dir_all(work).unwrap();
+}
