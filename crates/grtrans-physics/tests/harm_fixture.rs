@@ -59,9 +59,11 @@ fn harm_fluid_matches_fortran() {
         }
     }
     let (rho, p, bmag, u, b) = harm_vals(&data, &pts, 0.9375);
-    for n in [76usize,77,78,79,80,90] {
-        println!("row {n}: r={:.3} th={:.3} | rho {:.6e}/{:.6e} p {:.6e}/{:.6e} bmag {:.6e}/{:.6e}",
-            rows[n][12], rows[n][13], rho[n], rows[n][0], p[n], rows[n][1], bmag[n], rows[n][2]);
+    for n in [76usize, 77, 78, 79, 80, 90] {
+        println!(
+            "row {n}: r={:.3} th={:.3} | rho {:.6e}/{:.6e} p {:.6e}/{:.6e} bmag {:.6e}/{:.6e}",
+            rows[n][12], rows[n][13], rho[n], rows[n][0], p[n], rows[n][1], bmag[n], rows[n][2]
+        );
     }
     let mut worst = 0.0f64;
     let mut desc = String::new();
@@ -85,7 +87,10 @@ fn harm_fluid_matches_fortran() {
             let e = (a - bb).abs() / scale;
             if e > worst {
                 worst = e;
-                desc = format!("row {n} {name}: rust {a:e} fort {bb:e} (r={}, th={})", row[12], row[13]);
+                desc = format!(
+                    "row {n} {name}: rust {a:e} fort {bb:e} (r={}, th={})",
+                    row[12], row[13]
+                );
             }
         }
     }

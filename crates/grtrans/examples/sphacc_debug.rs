@@ -171,7 +171,8 @@ fn main() {
                 nu0,
                 inten[n - 1] * fac * lbh
             );
-            for k in [75usize] {
+            {
+                let k = 75usize;
                 println!("   u[{k}]={:?} k[{k}]={:?}", u[k].data, kv[k].data);
             }
             for k in [0usize, 10, 25, 50, 75, 99] {

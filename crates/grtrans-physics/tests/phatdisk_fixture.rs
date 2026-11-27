@@ -35,7 +35,9 @@ fn state() -> PhatdiskState {
     s
 }
 
-fn parse() -> (Vec<[f64; 6]>, Vec<[f64; 4]>, Vec<[f64; 6]>) {
+type FixtureRows = (Vec<[f64; 6]>, Vec<[f64; 4]>, Vec<[f64; 6]>);
+
+fn parse() -> FixtureRows {
     let text = std::fs::read_to_string(FIXTURE).expect("phatdisk fixture missing");
     let mut tables = Vec::new();
     let mut vals = Vec::new();

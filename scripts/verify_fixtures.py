@@ -43,9 +43,10 @@ def verify_case(d: Path, failures: list[str]) -> None:
                 failures.append(f"{d.name}/{raw}: missing")
             elif sha256(rp) != meta["raw_sha256"]:
                 failures.append(f"{d.name}/{raw}: sha256 mismatch")
-    for extra in ("inputs.in", "files.in"):
-        if not (d / extra).exists():
-            failures.append(f"{d.name}/{extra}: missing")
+    if "inputs" in m:  # Cases emitted by gen_reference.py include both decks.
+        for extra in ("inputs.in", "files.in"):
+            if not (d / extra).is_file():
+                failures.append(f"{d.name}/{extra}: missing")
 
 
 def main() -> int:

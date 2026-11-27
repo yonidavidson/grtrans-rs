@@ -92,8 +92,11 @@ fn powerlaw_maxjutt_matches_reference() {
     );
     let bytes = std::fs::read(&full).unwrap();
     let reference: Vec<f64> = bytes
-        .chunks_exact(8)
-        .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+        .as_chunks::<8>()
+        .0
+        .iter()
+        .copied()
+        .map(f64::from_le_bytes)
         .collect();
     assert_eq!(reference.len(), ours.len());
     let num: f64 = ours

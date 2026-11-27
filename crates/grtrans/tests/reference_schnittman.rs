@@ -66,8 +66,11 @@ fn schnittman_matches_reference() {
     );
     let bytes = std::fs::read(&full).unwrap();
     let reference: Vec<f64> = bytes
-        .chunks_exact(8)
-        .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+        .as_chunks::<8>()
+        .0
+        .iter()
+        .copied()
+        .map(f64::from_le_bytes)
         .collect();
     assert_eq!(reference.len(), ours.len());
     let num: f64 = ours
@@ -76,7 +79,10 @@ fn schnittman_matches_reference() {
         .map(|(a, b)| (a - b).abs())
         .sum();
     let den: f64 = reference.iter().map(|b| b.abs()).sum();
-    let err = num / den;
+    println!(
+        "SCHNITTMAN lsoda relative error vs upstream: {:e}",
+        num / den
+    );
     // also with the exact delo integrator, to check whether the deviation is
     // upstream LSODA error on the spiky spot emission (as in HARM)
     let opts_delo = TraceOptions {
@@ -124,8 +130,11 @@ fn schnittman_matches_reference() {
         env!("CARGO_MANIFEST_DIR")
     ))
     .unwrap()
-    .chunks_exact(8)
-    .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+    .as_chunks::<8>()
+    .0
+    .iter()
+    .copied()
+    .map(f64::from_le_bytes)
     .collect();
     let num4: f64 = ours2
         .iter()

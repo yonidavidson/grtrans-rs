@@ -27,8 +27,10 @@ pub fn rf(x: f64, y: f64, z: f64) -> f64 {
     let mut delz = 0.0f64;
     let mut __guard = 0usize;
     loop {
-            __guard += 1;
-            if __guard > 100_000 { panic!("rf: convergence loop exceeded 100k iterations"); }
+        __guard += 1;
+        if __guard > 100_000 {
+            panic!("rf: convergence loop exceeded 100k iterations");
+        }
         let sqrtx = xt.sqrt();
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();
@@ -85,8 +87,10 @@ pub fn rc(x: f64, y: f64) -> f64 {
     let mut s;
     let mut __guard = 0usize;
     loop {
-            __guard += 1;
-            if __guard > 100_000 { panic!("Carlson integral: convergence loop exceeded 100k iterations"); }
+        __guard += 1;
+        if __guard > 100_000 {
+            panic!("Carlson integral: convergence loop exceeded 100k iterations");
+        }
         let alamb = 2.0 * xt.sqrt() * yt.sqrt() + yt;
         xt = 0.25 * (xt + alamb);
         yt = 0.25 * (yt + alamb);
@@ -124,8 +128,10 @@ pub fn rd(x: f64, y: f64, z: f64) -> f64 {
     let mut delz = 0.0f64;
     let mut __guard = 0usize;
     loop {
-            __guard += 1;
-            if __guard > 100_000 { panic!("Carlson integral: convergence loop exceeded 100k iterations"); }
+        __guard += 1;
+        if __guard > 100_000 {
+            panic!("Carlson integral: convergence loop exceeded 100k iterations");
+        }
         let sqrtx = xt.sqrt();
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();
@@ -206,8 +212,10 @@ pub fn rj(x: f64, y: f64, z: f64, p: f64) -> f64 {
     let mut delp = 0.0f64;
     let mut __guard = 0usize;
     loop {
-            __guard += 1;
-            if __guard > 100_000 { panic!("Carlson integral: convergence loop exceeded 100k iterations"); }
+        __guard += 1;
+        if __guard > 100_000 {
+            panic!("Carlson integral: convergence loop exceeded 100k iterations");
+        }
         let sqrtx = xt.sqrt();
         let sqrty = yt.sqrt();
         let sqrtz = zt.sqrt();

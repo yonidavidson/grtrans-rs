@@ -15,8 +15,11 @@ fn fixture(path: &str) -> Vec<f64> {
     );
     let bytes = std::fs::read(&full).unwrap_or_else(|_| panic!("missing fixture {full}"));
     bytes
-        .chunks_exact(8)
-        .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+        .as_chunks::<8>()
+        .0
+        .iter()
+        .copied()
+        .map(f64::from_le_bytes)
         .collect()
 }
 

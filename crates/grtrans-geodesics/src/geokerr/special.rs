@@ -28,7 +28,9 @@ pub fn gauleg(x1: f64, x2: f64, n: usize) -> (Vec<f64>, Vec<f64>) {
         let mut __guard = 0usize;
         loop {
             __guard += 1;
-            if __guard > 1_000_000 { panic!("special: loop exceeded 1M iterations (NaN inputs?)"); }
+            if __guard > 1_000_000 {
+                panic!("special: loop exceeded 1M iterations (NaN inputs?)");
+            }
             let mut p1 = 1.0f64;
             let mut p2 = 0.0f64;
             for j in 1..=n {

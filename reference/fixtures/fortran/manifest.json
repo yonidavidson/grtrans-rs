@@ -1,0 +1,56 @@
+{
+  "name": "fortran",
+  "files": {
+    "ffjet_pixel6035_geodebug.txt": {
+      "sha256": "c6aad7c99ced4f2ced54d89a16d9d10ed758bf95640be306ce1789cbc9bb0c81"
+    },
+    "test_bessel.txt": {
+      "sha256": "81740516c66e2664786bc9b525bf7ee00bf8b36a5721c20c3a48b77bf9f3ac66"
+    },
+    "test_elliptic.txt": {
+      "sha256": "2d3bc9893ffd059a522c91edc219f45cb4d61a1d709351db533596c4b38d5b40"
+    },
+    "test_emis_extra.txt": {
+      "sha256": "3554aba0b9f4b09559a298fdd909fb17881a566fdbc66ed0e38da7e02f2600bc"
+    },
+    "test_ffjet_fluid.txt": {
+      "sha256": "9f9f5fd20c5292a3bbbf7dd1776b4c25a9169c161c7231c9406a459006df97e7"
+    },
+    "test_geokerr.txt": {
+      "sha256": "aaf62f7b2a508c857e8893909849d195ba8b99ba9f01287790c6064b94648045"
+    },
+    "test_geomu.txt": {
+      "sha256": "c3f55c5e37efdd24eb75eb6ec7704b97eb1fa64930e0973f329e733a734e6824"
+    },
+    "test_harm_fluid.txt": {
+      "sha256": "fc212065d46d0617bdd2389801284f5d9d5eff6d5d28d5e33b7b590e02f549ee"
+    },
+    "test_hotspot_fluid.txt": {
+      "sha256": "a37f68d2ec3d04aff634b0e4ba4d3c46a8460ce2dd48fbbe26c0f828a260a675"
+    },
+    "test_interp.txt": {
+      "sha256": "29f316d3ea8d887d08fccf8208d7917c901d64b1ff39e7cae63ee40d8f0bea1e"
+    },
+    "test_maxwell.txt": {
+      "sha256": "a5a7b6e494a61553a186f6ccb8eb8014ae0c413bda89a885e1c755680e1ab7fd"
+    },
+    "test_phatdisk_fluid.txt": {
+      "sha256": "cb7d6eb2dd086ef5130de86aa025e437f0657981bca9074e7418226bdde3d992"
+    },
+    "test_polsynch.txt": {
+      "sha256": "a6d4445f333856a31178b2dd40b52396860c67c8f7eb9d4ec321541f26cc79a2"
+    },
+    "test_sariaf_fluid.txt": {
+      "sha256": "66aae08e20ed99445b32108f975c5e1cd4f31483dec5b18a79f7bc7a6de1378d"
+    },
+    "test_schnittman_fluid.txt": {
+      "sha256": "f1015ad941803d6250bf6771ab4e6f430feec18ea297869cc6810c75bda8289e"
+    },
+    "test_toy_fluid.txt": {
+      "sha256": "c922adc4d0793145053e1fbd58038a9125cebfc3661200c8932dcee2def8d253"
+    },
+    "test_zroots.txt": {
+      "sha256": "2d3ef00ea01ba7a9fa7ead8bad4096409af9278384e27135c65cc6a61329af4e"
+    }
+  }
+}
