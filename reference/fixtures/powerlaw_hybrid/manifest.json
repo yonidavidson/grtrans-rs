@@ -1,0 +1,17 @@
+{
+  "name": "powerlaw_hybrid",
+  "files": {
+    "ab.f64.bin": {
+      "sha256": "280bc79699089b576111f1b37d25cbbff5d6064f9842e0064a0e8dd3b196caa9"
+    },
+    "ivals_pl.f64.bin": {
+      "sha256": "72f3b64b0f86877cf94003ad6273bb0ec4b00c18298800980919d896e4a248e6"
+    },
+    "ivals_th.f64.bin": {
+      "sha256": "4dd46184742d7eb0ba8325c23a3f860822f2bb418538b17ab7d35817e6ef9c73"
+    },
+    "ivals_thpl.f64.bin": {
+      "sha256": "ef39e41b358c528e8b563b6fe4b6290723c42484feeeab47c45a353f200f168e"
+    }
+  }
+}

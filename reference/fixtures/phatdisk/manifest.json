@@ -1,0 +1,17 @@
+{
+  "name": "phatdisk",
+  "files": {
+    "ab.f64.bin": {
+      "sha256": "69f404a5d7412d522cc15f9b85337b8196e448a2f327fbbeaec2d0d0f088bf2f"
+    },
+    "inputs.in": {
+      "sha256": "595551f6470bdfbf64fc55e299473e4e080ad398ef1380e4b64fd5eb2a55d771"
+    },
+    "ivals.f64.bin": {
+      "sha256": "8ca3b7ccaafabb66a3aa48d2a12f239b5bff8c384fc4da3ccc56dbf1247bf75e"
+    },
+    "phatdisk_test.in": {
+      "sha256": "a9b420c5bcf54ebcbdd21410f56db99c0972d6465bf3a1d1050dcc1c6b67bfbb"
+    }
+  }
+}

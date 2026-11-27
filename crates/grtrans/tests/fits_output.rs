@@ -149,8 +149,11 @@ fn cli_fits_thindisk_matches_reference() {
     assert_eq!(hdus[0].data.len(), npix * 2);
     let reference: Vec<f64> = std::fs::read(fixture_dir.join("ivals.f64.bin"))
         .unwrap()
-        .chunks_exact(8)
-        .map(|c| f64::from_le_bytes(c.try_into().unwrap()))
+        .as_chunks::<8>()
+        .0
+        .iter()
+        .copied()
+        .map(f64::from_le_bytes)
         .collect();
     assert_eq!(reference.len(), npix * nvals * nfreq);
     let mut num = 0.0f64;

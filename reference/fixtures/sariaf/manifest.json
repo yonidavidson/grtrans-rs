@@ -1,0 +1,32 @@
+{
+  "name": "sariaf",
+  "files": {
+    "ab.f64.bin": {
+      "sha256": "69f404a5d7412d522cc15f9b85337b8196e448a2f327fbbeaec2d0d0f088bf2f"
+    },
+    "files.in": {
+      "sha256": "f4b671938bb18e5ee16471745e64b88050d4fc8d4c048dfbf286304c2ebee2ca"
+    },
+    "inputs.in": {
+      "sha256": "8e65f7200dae1e1407d79d5dc3f9f6affcdbe40950ba006384064628f56bffc2"
+    },
+    "ivals.f64.bin": {
+      "sha256": "5e83a26881b6ace177badab64d497c477e3b384ba2470aed8720eb2dcb95198f"
+    },
+    "pixel/I1.f64.bin": {
+      "sha256": "8c94b6e382dc25e76ce90c9a884aadab84de8af53fca3f5ad5f2e271829bdfa3"
+    },
+    "pixel/K.f64.bin": {
+      "sha256": "57a147db1c5630440e60de34d35cbadae2bb8c9c09d967a6f2435ff30a491642"
+    },
+    "pixel/j.f64.bin": {
+      "sha256": "b4a30946a390664d287ebbabff9671137a3180a794769ecb547ebf767e9c7a3c"
+    },
+    "pixel/s.f64.bin": {
+      "sha256": "7d90dded2c843fa93479f7bdb196994d27f97b74472126326532d271b16e87d6"
+    },
+    "pixel/tau.f64.bin": {
+      "sha256": "f04dbd1b0a4ec1e773d1db9e3aca5e3cc0f3db291fa8ecf52c298cb66e68fd0b"
+    }
+  }
+}

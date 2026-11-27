@@ -1,0 +1,11 @@
+{
+  "name": "powerlaw_maxjutt",
+  "files": {
+    "ab.f64.bin": {
+      "sha256": "280bc79699089b576111f1b37d25cbbff5d6064f9842e0064a0e8dd3b196caa9"
+    },
+    "ivals.f64.bin": {
+      "sha256": "ab09aab4fe6d70a1dce549093be95dedf9a073c04afc1209327cd5e165a1c054"
+    }
+  }
+}

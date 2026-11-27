@@ -254,7 +254,9 @@ pub fn geomu(
             let mut __guard = 0usize;
             loop {
                 __guard += 1;
-                if __guard > 1_000_000 { panic!("geomu: retry loop exceeded 1M iterations (NaN inputs?)"); }
+                if __guard > 1_000_000 {
+                    panic!("geomu: retry loop exceeded 1M iterations (NaN inputs?)");
+                }
                 // label 80 (retried when uf lands in the forbidden region)
                 u0_work = u0;
                 uf_work = uf;
@@ -453,7 +455,9 @@ pub fn geomu(
                 let mut __guard = 0usize;
                 loop {
                     __guard += 1;
-                    if __guard > 1_000_000 { panic!("geomu: retry loop exceeded 1M iterations (NaN inputs?)"); }
+                    if __guard > 1_000_000 {
+                        panic!("geomu: retry loop exceeded 1M iterations (NaN inputs?)");
+                    }
                     // label 90
                     if out.u2 > uplus && out.u3 > uplus {
                         out.ncase = 5;

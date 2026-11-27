@@ -200,14 +200,7 @@ pub fn lnrf_frame_inv(vr: f64, vt: f64, omega: f64, r: f64, a: f64, th: f64) -> 
 
 /// Forward LNRF transform in single precision (upstream
 /// `lnrf_frame_real`): BL velocity components -> LNRF components.
-pub fn lnrf_frame_f32(
-    vr: f32,
-    vt: f32,
-    omega: f32,
-    r: f32,
-    a: f32,
-    th: f32,
-) -> (f32, f32, f32) {
+pub fn lnrf_frame_f32(vr: f32, vt: f32, omega: f32, r: f32, a: f32, th: f32) -> (f32, f32, f32) {
     let mu = th.cos();
     let d = r * r - 2.0 * r + a * a;
     let ar = (r * r + a * a).powi(2) - a * a * d * (1.0 - mu * mu);

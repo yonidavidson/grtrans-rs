@@ -317,3 +317,21 @@ With a physically reasonable `l0` the velocity is real (a large `l0` makes it
 NaN/superluminal). The end-to-end TOY+POLSYNCHPL test is a self-consistency
 check (finite, physical image), since upstream's aleph/bb garbage means there
 is no valid reference.
+
+## 3.7 Thin-disk symmetry and outer radius
+
+An unresolved axisymmetric disk viewed face-on should have zero net linear polarization. Individual pixels can still be polarized. Sum Q and U over the equal-area pixels before computing the fraction `hypot(sum Q, sum U) / sum I`. Summing the polarized intensity of each pixel first measures a different quantity.
+
+Starting with the [THINDISK deck](../reference/fixtures/thindisk/inputs.in), set `nfreq=1` to use 2.41 × 10¹⁶ Hz. Set both `mumin` and `mumax` to the cosine of the inclination. We swept 37°, 10°, 3°, 1°, 0.3°, 0.1° and 0° with both executables on 100 × 100 and 200 × 200 grids. For the finer grid set `nn=200,200,1` and `i2=40000`. At 200 × 200, the Rust net fraction fell from 0.00505 at 37° to 1.44 × 10⁻¹² on axis. The face-on sum of the individual polarized intensities divided by total intensity remained 0.00215. The Rust regression checks both cancellation and the presence of local polarization.
+
+With the fixture inclination and 100 × 100 grid restored, varying only the disk outer radius yielded these results. Brightness is the image-plane integral of Stokes I in camera coordinates. Relative L1 sums absolute differences across all pixels and four Stokes components, divided by the corresponding sum of absolute Fortran values. The reference executable used upstream revision `c76cb11` with the repository's gfortran compatibility patch.
+
+| Outer radius (`frout`, gravitational radii) | Rust brightness | Relative L1 vs Fortran |
+| ---: | ---: | ---: |
+| 6 | 4,132.55 | 2.88 × 10⁻⁸ |
+| 12 | 11,898.04 | 1.67 × 10⁻⁸ |
+| 24 | 25,823.23 | 1.07 × 10⁻⁸ |
+| 48 | 38,306.39 | 8.56 × 10⁻⁹ |
+| 10⁸ (fixture) | 42,571.54 | 7.99 × 10⁻⁹ |
+
+Observer distance was held fixed. The standard camera derives the inverse observer radius `u0` from the image-plane bounds. Changing the deck's `uout` would not independently vary the observer distance.

@@ -1,0 +1,17 @@
+{
+  "name": "schnittman",
+  "files": {
+    "ab.f64.bin": {
+      "sha256": "69f404a5d7412d522cc15f9b85337b8196e448a2f327fbbeaec2d0d0f088bf2f"
+    },
+    "delo_ivals.f64.bin": {
+      "sha256": "3d9d25c82dd42237d69302bd2f62c49de48aba446642cd671011c8b7241c4096"
+    },
+    "inputs.in": {
+      "sha256": "35644924984938e50fc7f9b92ac1e5543d7d562d1f80a3421355756b6abb3b4c"
+    },
+    "ivals.f64.bin": {
+      "sha256": "0c47231473e30b88e8d58d1e3d5b847170730136062080c015a6044f1467b07c"
+    }
+  }
+}

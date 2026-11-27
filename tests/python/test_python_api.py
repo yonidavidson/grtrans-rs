@@ -19,6 +19,13 @@ def main() -> int:
     root = Path(__file__).resolve().parents[2]
     print("grtrans_python version:", gt.version())
 
+    try:
+        gt.run_image(fname="BOX")
+    except ValueError as error:
+        assert 'unsupported fluid model fname="BOX"' in str(error)
+    else:
+        raise AssertionError("an unsupported fluid model produced an image")
+
     # single geodesic ray
     x, k, lam = gt.geodesic_ray(
         alpha=-10.4, beta=-9.75, mu0=0.6428, spin=0.9375, standard=1, uout=0.04, nup=25

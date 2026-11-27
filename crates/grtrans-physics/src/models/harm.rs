@@ -12,13 +12,13 @@
 //! 6 = pressure; 14-17 = u^t, u^r, u^theta, u^phi (MKS); 22-25 = b^t, b^r,
 //! b^theta, b^phi (MKS); 34 = sqrt(-g).
 
+use grtrans_core::constants::G as GC;
 use grtrans_core::constants::{C2, K, MP, MSUN, PI};
 use grtrans_core::four_vector::FourVector;
 use grtrans_core::kerr::{
     blmetric_cov, blmetric_cov_f32, lnrf_frame_f32, lnrf_frame_inv_f32, uks2ubl,
 };
 use grtrans_core::math::zbrent;
-use grtrans_core::constants::G as GC;
 use std::path::Path;
 
 /// Upstream module state for HARM.
@@ -51,12 +51,7 @@ pub struct HarmData {
 
 /// Upstream `umksh2uks`: convert a MKS four-vector component set to KS
 /// spherical components.
-fn umksh2uks(
-    fut: &FourVector,
-    r: f32,
-    x2: f32,
-    hval: f32,
-) -> FourVector {
+fn umksh2uks(fut: &FourVector, r: f32, x2: f32, hval: f32) -> FourVector {
     let dthdx2 = PI as f32 * (1.0 + (1.0 - hval) * (2.0 * PI as f32 * x2).cos());
     let mut out = *fut;
     out.data[1] = r as f64 * fut.data[1];
@@ -180,7 +175,13 @@ pub fn harm_vals(
     data: &HarmData,
     x0: &[FourVector],
     a: f32,
-) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<FourVector>, Vec<FourVector>) {
+) -> (
+    Vec<f32>,
+    Vec<f32>,
+    Vec<f32>,
+    Vec<FourVector>,
+    Vec<FourVector>,
+) {
     let nx1 = data.nx1;
     let nx2 = data.nx2;
     let npts = x0.len();
@@ -202,14 +203,12 @@ pub fn harm_vals(
         let zr = x0[i].data[1] as f32;
         let theta = x0[i].data[2] as f32;
         let (x1, x2) = transformbl2mksh(zr, theta, data.h);
-        let mut lx1 =
-            ((x1 - uniqx1[0]) / (uniqx1[nx1 - 1] - uniqx1[0]) * (nx1 as f32 - 1.0)).floor()
-                as i32
-                + 1;
-        let mut lx2 =
-            ((x2 - uniqx2[0]) / (uniqx2[nx2 - 1] - uniqx2[0]) * (nx2 as f32 - 1.0)).floor()
-                as i32
-                + 1;
+        let mut lx1 = ((x1 - uniqx1[0]) / (uniqx1[nx1 - 1] - uniqx1[0]) * (nx1 as f32 - 1.0))
+            .floor() as i32
+            + 1;
+        let mut lx2 = ((x2 - uniqx2[0]) / (uniqx2[nx2 - 1] - uniqx2[0]) * (nx2 as f32 - 1.0))
+            .floor() as i32
+            + 1;
         // upstream clamps lx2/ux2 only; lx1 is clamped here for memory
         // safety (out-of-grid rays read arbitrary in-bounds memory upstream)
         lx1 = lx1.clamp(1, nx1 as i32 - 1);
@@ -247,17 +246,28 @@ pub fn harm_vals(
             let w2 = v[2] * (1.0 - td) + v[3] * td;
             w1 * (1.0 - rd) + w2 * rd
         };
-        let get4 = |arr: &[f32]| -> [f32; 4] {
-            [arr[idx[0]], arr[idx[1]], arr[idx[2]], arr[idx[3]]]
-        };
+        let get4 =
+            |arr: &[f32]| -> [f32; 4] { [arr[idx[0]], arr[idx[1]], arr[idx[2]], arr[idx[3]]] };
         let inside = x1 > uniqx1[0];
         let rho_v = bil(get4(&data.rho_arr));
         rho[i] = if inside { rho_v } else { 0.0 };
         let p_v = bil(get4(&data.p_arr));
         p[i] = if inside { p_v } else { 1.0 };
-        let vrl0 = if inside { bil(get4(&data.vrl_arr)) } else { 0.0 };
-        let vtl0 = if inside { bil(get4(&data.vtl_arr)) } else { 1.0 };
-        let vpl0 = if inside { bil(get4(&data.vpl_arr)) } else { 0.0 };
+        let vrl0 = if inside {
+            bil(get4(&data.vrl_arr))
+        } else {
+            0.0
+        };
+        let vtl0 = if inside {
+            bil(get4(&data.vtl_arr))
+        } else {
+            1.0
+        };
+        let vpl0 = if inside {
+            bil(get4(&data.vpl_arr))
+        } else {
+            0.0
+        };
         for (c, arr) in [
             (0usize, &data.b0_arr),
             (1, &data.br_arr),

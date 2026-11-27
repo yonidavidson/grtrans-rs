@@ -1,0 +1,14 @@
+{
+  "name": "hotspot",
+  "files": {
+    "ab.f64.bin": {
+      "sha256": "69f404a5d7412d522cc15f9b85337b8196e448a2f327fbbeaec2d0d0f088bf2f"
+    },
+    "inputs.in": {
+      "sha256": "13d3647705c306b83d92c8a6805a15e612d4c4d6ba5889f5d3357bee0364edb5"
+    },
+    "ivals.f64.bin": {
+      "sha256": "844640204eec5ad2d52f59c0ef1cea84cb423db4319368a108349038ea030c6c"
+    }
+  }
+}

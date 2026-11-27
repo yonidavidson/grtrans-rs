@@ -218,7 +218,9 @@ pub fn geor(
             let mut __guard = 0usize;
             loop {
                 __guard += 1;
-                if __guard > 1_000_000 { panic!("geor: retry loop exceeded 1M iterations (NaN inputs?)"); }
+                if __guard > 1_000_000 {
+                    panic!("geor: retry loop exceeded 1M iterations (NaN inputs?)");
+                }
                 // label 80
                 if u0 <= out.u2 {
                     out.ncase = 1;
@@ -477,7 +479,9 @@ pub fn geor(
                 let mut __guard = 0usize;
                 loop {
                     __guard += 1;
-                    if __guard > 1_000_000 { panic!("geor: retry loop exceeded 1M iterations (NaN inputs?)"); }
+                    if __guard > 1_000_000 {
+                        panic!("geor: retry loop exceeded 1M iterations (NaN inputs?)");
+                    }
                     // label 90
                     if out.u2 > uplus && out.u3 > uplus {
                         out.ncase = 5;

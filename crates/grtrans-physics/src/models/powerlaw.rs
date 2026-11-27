@@ -87,7 +87,15 @@ pub fn powerlaw_vals(
     state: &PowerlawState,
     u: &[f32],
     mu: &[f32],
-) -> (Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>, Vec<f32>) {
+) -> (
+    Vec<f32>,
+    Vec<f32>,
+    Vec<f32>,
+    Vec<f32>,
+    Vec<f32>,
+    Vec<f32>,
+    Vec<f32>,
+) {
     let n = u.len();
     let mut neth = vec![0.0f32; n];
     let mut nenth = vec![0.0f32; n];
@@ -158,9 +166,10 @@ pub fn get_powerlaw_fluidvars(
         // aleph and bb are default-real intermediates upstream (f64
         // expressions narrowed to f32)
         let m = &metric.0;
-        let aleph = (-(m[3] * u0 + m[9] * f.u[i].data[3])
-            / (m[0] * u0 + m[3] * f.u[i].data[3])) as f32;
-        let bb = (m[0] * (aleph as f64) * (aleph as f64) + m[9] + 2.0 * m[3] * (aleph as f64)) as f32;
+        let aleph =
+            (-(m[3] * u0 + m[9] * f.u[i].data[3]) / (m[0] * u0 + m[3] * f.u[i].data[3])) as f32;
+        let bb =
+            (m[0] * (aleph as f64) * (aleph as f64) + m[9] + 2.0 * m[3] * (aleph as f64)) as f32;
         let b4 = bmag[i] / bb.sqrt();
         f.b[i].data[0] = aleph as f64 * b4 as f64;
         f.b[i].data[1] = 0.0;
